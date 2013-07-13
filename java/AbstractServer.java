@@ -23,16 +23,14 @@ public class AbstractServer {
         try {
           serverSocket = new ServerSocket(port);
         } catch (IOException e) {
-          System.err.println("Unable to open " + port + " to start server.");
-          throw e;
+          throw new IOException("Unable to open " + port + " to start server.", e);
         }
 
         while(true) {
           try {
             clientSocket = serverSocket.accept();
           } catch (IOException e) {
-            System.err.println("Unable to listen for more server connections.");
-            throw e;
+            throw new IOException("Unable to listen for more server connections.", e);
           }
           new Thread(new RequestWaiter(responder, clientSocket, null)).start();
         }
@@ -49,10 +47,8 @@ public class AbstractServer {
             String message = incoming.readLine();
             System.out.println(message); // tell the relayed host & port
           } catch (IOException e) {
-            System.err.println("Unable to route through relay server.");
-            throw e;
-          } finally {
-            try { incoming.close(); } catch (Exception e) {}
+            try { incoming.close(); } catch (Exception e2) {}
+            throw new IOException("Unable to route through relay server.", e);
           }
           new Thread(new RequestWaiter(responder, clientSocket, incoming)).start();
           System.out.println("??? done with main");
@@ -95,7 +91,7 @@ public class AbstractServer {
         System.err.println("Got error communicating messages.");
         e.printStackTrace();
       } finally {
-        try { incoming.close(); } catch (Exception e) {} // should let outer if passed in
+        try { incoming.close(); } catch (Exception e) {}
         try { outgoing.close(); } catch (Exception e) {}
       }
     }    

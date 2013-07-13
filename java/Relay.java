@@ -23,16 +23,14 @@ public class Relay {
         try {
           newServerServerSocket = new ServerSocket(port);
         } catch (IOException e) {
-          System.err.println("Unable to open " + port + " to start relay.");
-          throw e;
+          throw new IOException("Unable to open " + port + " to start relay.", e);
         }
 
         while (true) {
           try {
             newServerConnection = newServerServerSocket.accept();
           } catch (IOException e) {
-            System.err.println("Unable to listen for more server connections.");
-            throw e;
+            throw new IOException("Unable to listen for more server connections.", e);
           }
 
           System.out.println( "???? THE SERVER"+" "+ newServerConnection.getInetAddress() +":"+newServerConnection.getPort()+" IS CONNECTED ");
