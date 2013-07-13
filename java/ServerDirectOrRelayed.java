@@ -96,8 +96,7 @@ public class ServerDirectOrRelayed {
           messageIn = incoming.readLine();
         }
       } catch (IOException e) {
-        System.err.println("Got error communicating messages.");
-        e.printStackTrace();
+        throw new RuntimeException("Got error communicating messages.", e);
       } finally {
         try { incoming.close(); } catch (Exception e) {}
         try { outgoing.close(); } catch (Exception e) {}

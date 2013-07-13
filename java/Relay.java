@@ -5,7 +5,6 @@ import java.util.*;
 
 public class Relay {
 
-  public static HashMap<Integer, ServerSocket> serverSockets = new HashMap<Integer, ServerSocket>();
   public static String host = "localhost";
   public static int lastUsedPort = 8080;
 

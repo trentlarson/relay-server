@@ -53,20 +53,11 @@ Hello, world
 Still to do:
 - ensure different IPs work
 - test scripts
-- approach: route incoming client back to original ServerSocket; or
-create new ServerSocket for server to reconnect... allow multiple
-clients with different connections?
 - bash scripts
-- may want to make that abstract main work
 -- help for relay
 - - error level param
 - - add host parameter to Relay
-- remove System.outs
-- wrap exceptions in others
-- remove ???
-- close threads at the end?
-- all connections close when remote client closes
-- if it shuts down, undefined (I do null)
+
 
 start 12... pause at 12:30... for ?
 done at 3:17?
@@ -76,11 +67,9 @@ finished 6:24
 
 Assumptions:
 
-I can treat any incoming server IP as if there is only one server on that IP.  (In other words, any incoming server connection that has the same IP as a previous one can replace that previous one.)
+I can use a server/socket library (eg. for Java, for node).
 
-???? I can use a server/socket library (eg. for Java, for node).
-
-I can ignore problems of too much data without a newline.
+I can ignore problems of too much data (eg. 10 GB of data without a newline).
 
 I assume that these two sentences cover the same requirement:
 "it should output on stdout what its new public address is"
@@ -91,11 +80,10 @@ I don't have to provide all the help info I typically would spend time on (eg. i
 
 I can ignore problems of too many servers, too many clients,
 connections being open for too long, or disconnects (since you said we
-won't "initiate" any connections)... essentially, all those pecky
+won't "initiate" any connections)... essentially, all those pesky
 high-traffic concerns.
 
+I can do my own thing if a server shuts down (like return "null" to clients).
 
-
-Later:
-- java accepts on a port, then binds to a different port... so we can
-use that new socket (otherwise we'd for them to reconnect)
+I don't have to write signals back-and-forth for when, say, the relay
+shuts down or when the servers shut down.
