@@ -70,6 +70,7 @@ public class AbstractServer {
     public RequestWaiter(Responder _responder, Socket _clientSocket, BufferedReader _incoming) throws IOException {
       responder = _responder;
       clientSocket = _clientSocket;
+      incoming = _incoming;
     }
     /**
        Loop forever, responding appropriately to requests.
