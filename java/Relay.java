@@ -37,19 +37,8 @@ public class Relay {
 
           System.out.println( "???? THE SERVER"+" "+ newServerConnection.getInetAddress() +":"+newServerConnection.getPort()+" IS CONNECTED ");
             
-          boolean foundPort = false;
-          int nextTrialPort = lastUsedPort;
-          ServerSocket clientServerSocket = null;
-          while (!foundPort) {
-            nextTrialPort++;
-            try {
-              clientServerSocket = new ServerSocket(nextTrialPort);
-              foundPort = true;
-            } catch (IOException e) {
-              // continue with the attempts until we find an open port
-            }
-          }
-          PassThroughServerSocket ptss = new PassThroughServerSocket(newServerConnection, clientServerSocket);
+          int portForServer = findNextOpenPortAbove(lastUsedPort);
+          PassThroughServerSocket ptss = new PassThroughServerSocket(newServerConnection, portForServer);
           new Thread(ptss).start();
         }
       } catch (IOException e) {
@@ -65,32 +54,36 @@ public class Relay {
 
   public static class PassThroughServerSocket implements Runnable {
     private Socket serverSocket;
-    private ServerSocket clientServerSocket;
-    public PassThroughServerSocket(Socket _serverSocket, ServerSocket _clientServerSocket) {
+    private int clientPort;
+    public PassThroughServerSocket(Socket _serverSocket, int _clientPort) {
       serverSocket = _serverSocket;
-      clientServerSocket = _clientServerSocket;
+      clientPort = _clientPort;
     }
     public void run() {
-
-      while (true) {
-        Socket newClientConnection = null;
-        try {
-
-          PrintWriter requestToServer = new PrintWriter(serverSocket.getOutputStream(), true);
-          requestToServer.println(serverSocket.getInetAddress().getHostAddress() + ":" + serverSocket.getPort());
-
-          newClientConnection = clientServerSocket.accept();
-
-          System.out.println( "???? THE client"+" "+ newClientConnection.getInetAddress() +":"+newClientConnection.getPort()+" IS CONNECTED ");
-          
-          new Thread(new PassThroughRequestWaiter(serverSocket, newClientConnection, requestToServer)).start();
-
-        } catch (IOException e) {
-          e.printStackTrace();
-        } finally {
-          try { newClientConnection.close(); } catch (Exception e) {}
-        }
+      ServerSocket clientServerSocket = null;
+      try {
+        clientServerSocket = new ServerSocket(clientPort);
+        while (true) {
+          Socket newClientConnection = null;
+          try {
             
+            PrintWriter requestToServer = new PrintWriter(serverSocket.getOutputStream(), true);
+            requestToServer.println(serverSocket.getInetAddress().getHostAddress() + ":" + serverSocket.getPort());
+            
+            newClientConnection = clientServerSocket.accept();
+            
+            System.out.println( "???? THE client"+" "+ newClientConnection.getInetAddress() +":"+newClientConnection.getPort()+" IS CONNECTED ");
+            
+            new Thread(new PassThroughRequestWaiter(serverSocket, newClientConnection, requestToServer)).start();
+            
+          } finally {
+            try { newClientConnection.close(); } catch (Exception e) {}
+          }
+        }
+      } catch (IOException e) {
+        e.printStackTrace();
+      } finally {
+        try { clientServerSocket.close(); } catch (Exception e) {}
       }
     }
   }
@@ -132,6 +125,27 @@ public class Relay {
 
     }
   }
+
+
+  public static int findNextOpenPortAbove(int port) throws IOException {
+    boolean foundPort = false;
+    int nextTrialPort = port;
+    ServerSocket serverSocket = null;
+    while (!foundPort) {
+      nextTrialPort++;
+      try {
+        serverSocket = new ServerSocket(nextTrialPort);
+        foundPort = true;
+      } catch (IOException e) {
+        // continue with the attempts until we find an open port
+        if (nextTrialPort == 65535) throw new IOException("No open port.");
+      } finally {
+        try { serverSocket.close(); } catch (Exception e) {}
+      }
+    }
+    return nextTrialPort;
+  }
+
 }
 
 

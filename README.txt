@@ -60,10 +60,13 @@ clients with different connections?
 - may want to make that abstract main work
 - help for relay
 - remove System.outs
+- wrap exceptions in others
+- remove ???
 
 start 12... pause at 12:30... for ?
 done at 3:17?
-
+no, 4:17
+figured out port conflict at 5:04
 
 Assumptions:
 

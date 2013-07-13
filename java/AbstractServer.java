@@ -42,14 +42,12 @@ public class AbstractServer {
         String host = args[0];
         int port = Integer.valueOf(args[1]).intValue();
 
-        while(true) {
           BufferedReader incoming = null;
           try {
-System.out.println("... about to get socket");
             clientSocket = new Socket(host, port);
-System.out.println("... got socket " + new java.util.Date());
             incoming = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-            System.out.println(incoming.readLine()); // tell the relayed host & port
+            String message = incoming.readLine();
+            System.out.println(message); // tell the relayed host & port
           } catch (IOException e) {
             System.err.println("Unable to route through relay server.");
             throw e;
@@ -57,7 +55,8 @@ System.out.println("... got socket " + new java.util.Date());
             try { incoming.close(); } catch (Exception e) {}
           }
           new Thread(new RequestWaiter(responder, clientSocket, incoming)).start();
-        }
+          System.out.println("??? done with main");
+
       }
 
     } catch (IOException e) {
@@ -82,7 +81,9 @@ System.out.println("... got socket " + new java.util.Date());
     public void run() {
       PrintWriter outgoing = null;
       try {
-        incoming = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+        if (incoming == null) {
+          incoming = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+        }
         outgoing = new PrintWriter(clientSocket.getOutputStream(), true);
       
         String messageIn = incoming.readLine();
