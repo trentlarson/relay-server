@@ -29,7 +29,7 @@ public class Relay {
           try { newServerServerSocket.close(); } catch (Exception e2) {}
         }
 
-        while(true) {
+        while (true) {
           try {
             newServerConnection = newServerServerSocket.accept();
           } catch (IOException e) {
@@ -39,8 +39,6 @@ public class Relay {
           }
 
           System.out.println( "???? THE SERVER"+" "+ newServerConnection.getInetAddress() +":"+newServerConnection.getPort()+" IS CONNECTED ");
-            
-          //BufferedReader inFromServer = new BufferedReader(new InputStreamReader(newServerConnection.getInputStream()));
             
           boolean foundPort = false;
           int nextTrialPort = lastUsedPort;
@@ -54,56 +52,14 @@ public class Relay {
               // continue with the attempts until we find an open port
             }
           }
-          //serverSockets.put(clientServerSocket.getLocalPort(), clientServerSocket);
           PassThroughServerSocket ptss = new PassThroughServerSocket(newServerConnection, clientServerSocket);
           new Thread(ptss).start();
-          
-          /**
-          try {
-            PrintWriter outToServer = new PrintWriter(newServerConnection.getOutputStream(),true);
-            outToServer.print("????? connected!" + "\n");
-          } catch (IOException e) {
-            System.err.println("Unable to open connection to server.");
-            e.printStackTrace();
-            System.exit(1);
-          }
-          **/
         }
       } finally {
         try { newServerConnection.close(); } catch (Exception e) {}
         try { newServerServerSocket.close(); } catch (Exception e) {}
       }
 
-/**
-      BufferedReader newServerIn = null;
-      PrintWriter newServerOut = null;
-
-      try {
-        newServerSocket = new Socket(host, port);
-        newServerIn = new BufferedReader(new InputStreamReader(newServerSocket.getInputStream()));
-        newServerOut = new PrintWriter(newServerSocket.getOutputStream(), true);
-        
-        String newServer = newServerIn.readLine();
-        while(newServer != null) {
-          System.out.println("hi");
-          //clientSocket;
-
-        }
-      } catch (UnknownHostException e) {
-        System.err.println("Don't know about host: " + host);
-        e.printStackTrace();
-        System.exit(1);
-      } catch (IOException e) {
-        System.err.println("Couldn't get I/O for the connection to: " + host + ":" + port);
-        e.printStackTrace();
-        System.exit(1);
-      } finally {
-        try { newServerIn.close(); } catch (Exception e) {}
-        try { newServerOut.close(); } catch (Exception e) {}
-        try { newServerIn.close(); } catch (Exception e) {}
-        try { newServerSocket.close(); } catch (Exception e) {}
-      }
-**/
     }
   }
     
