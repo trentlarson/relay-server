@@ -64,6 +64,7 @@ clients with different connections?
 - remove ???
 - close threads at the end?
 - add host parameter to Relay
+- all connections close when remote client closes
 
 
 start 12... pause at 12:30... for ?

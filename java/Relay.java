@@ -61,18 +61,20 @@ public class Relay {
     public void run() {
       ServerSocket clientServerSocket = null;
       try {
+
+        PrintWriter requestToServer = new PrintWriter(serverSocket.getOutputStream(), true);
+        BufferedReader responseFromServer = new BufferedReader(new InputStreamReader(serverSocket.getInputStream()));
+
+        requestToServer.println(host + ":" + clientPort);
+
         clientServerSocket = new ServerSocket(clientPort);
         while (true) {
             
-          PrintWriter requestToServer = new PrintWriter(serverSocket.getOutputStream(), true);
-          // for host, serverSocket.getInetAddress() gives 127.0.0.1
-          requestToServer.println(host + ":" + clientPort);
-          
           Socket newClientConnection = clientServerSocket.accept();
             
           System.out.println( "???? THE client"+" "+ newClientConnection.getInetAddress() +":"+newClientConnection.getPort()+" IS CONNECTED ");
             
-          new Thread(new PassThroughRequestWaiter(serverSocket, newClientConnection, requestToServer)).start();
+          new Thread(new PassThroughRequestWaiter(serverSocket, newClientConnection, requestToServer, responseFromServer)).start();
             
         }
       } catch (IOException e) {
@@ -87,17 +89,18 @@ public class Relay {
   public static class PassThroughRequestWaiter implements Runnable {
     Socket serverSocket = null, newClientConnection = null;
     PrintWriter requestToServer = null;
-    public PassThroughRequestWaiter(Socket _serverSocket, Socket _newClientConnection, PrintWriter _requestToServer) {
+    BufferedReader responseFromServer = null;
+    public PassThroughRequestWaiter(Socket _serverSocket, Socket _newClientConnection, PrintWriter _requestToServer, BufferedReader _responseFromServer) {
       serverSocket = _serverSocket;
       newClientConnection = _newClientConnection;
       requestToServer = _requestToServer;
+      responseFromServer = _responseFromServer;
     }
     public void run() {
-      BufferedReader requestFromClient = null, responseFromServer = null;
+      BufferedReader requestFromClient = null;
       PrintWriter responseToClient = null;
       try {
         requestFromClient = new BufferedReader(new InputStreamReader(newClientConnection.getInputStream()));
-        responseFromServer = new BufferedReader(new InputStreamReader(serverSocket.getInputStream()));
         responseToClient = new PrintWriter(newClientConnection.getOutputStream(), true);
 
         String messageIn = requestFromClient.readLine();
