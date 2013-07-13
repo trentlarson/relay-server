@@ -58,19 +58,21 @@ create new ServerSocket for server to reconnect... allow multiple
 clients with different connections?
 - bash scripts
 - may want to make that abstract main work
-- help for relay
+-- help for relay
+- - error level param
+- - add host parameter to Relay
 - remove System.outs
 - wrap exceptions in others
 - remove ???
 - close threads at the end?
-- add host parameter to Relay
 - all connections close when remote client closes
-
+- if it shuts down, undefined (I do null)
 
 start 12... pause at 12:30... for ?
 done at 3:17?
 no, 4:17
 figured out port conflict at 5:04
+finished 6:24
 
 Assumptions:
 

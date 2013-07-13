@@ -2,14 +2,14 @@
 import java.io.*;
 import java.net.*;
 
-public class WhosThereServer extends AbstractServer implements AbstractServer.Responder {
+public class WhosThereServer extends AbstractServer {
   
   public static void main(String[] args) {
-    runServer(args, new WhosThereServer());
-  }
-
-  public String response(String message) {
-    return "Who's there?!";
+    runServer(args, new AbstractServer.Responder() {
+        public String response(String request) {
+          return "Who's there?!";
+        }
+      });
   }
 
 }

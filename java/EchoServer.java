@@ -2,14 +2,15 @@
 import java.io.*;
 import java.net.*;
 
-public class EchoServer extends AbstractServer implements AbstractServer.Responder {
+public class EchoServer extends AbstractServer {
   
   public static void main(String[] args) {
-    runServer(args, new EchoServer());
+    runServer(args, new AbstractServer.Responder() {
+        public String response(String request) {
+          return request;
+        }
+      });
   }
 
-  public String response(String message) {
-    return message;
-  }
 
 }

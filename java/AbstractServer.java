@@ -5,7 +5,7 @@ import java.net.*;
 public class AbstractServer {
   
   protected interface Responder {
-    public String response(String message);
+    public String response(String request);
   }
 
   public static void runServer(String[] args, Responder responder) {
