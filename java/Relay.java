@@ -71,19 +71,19 @@ public class Relay {
       clientServerSocket = _clientServerSocket;
     }
     public void run() {
+
       while (true) {
         Socket newClientConnection = null;
         try {
-          try {
-            newClientConnection = clientServerSocket.accept();
-          } catch (IOException e) {
-            System.err.println("Unable to listen for more client connections.");
-            throw e;
-          }
+
+          PrintWriter requestToServer = new PrintWriter(serverSocket.getOutputStream(), true);
+          requestToServer.println(serverSocket.getInetAddress().getHostAddress() + ":" + serverSocket.getPort());
+
+          newClientConnection = clientServerSocket.accept();
 
           System.out.println( "???? THE client"+" "+ newClientConnection.getInetAddress() +":"+newClientConnection.getPort()+" IS CONNECTED ");
           
-          new Thread(new PassThroughRequestWaiter(serverSocket, newClientConnection)).start();
+          new Thread(new PassThroughRequestWaiter(serverSocket, newClientConnection, requestToServer)).start();
 
         } catch (IOException e) {
           e.printStackTrace();
@@ -98,13 +98,15 @@ public class Relay {
 
   public static class PassThroughRequestWaiter implements Runnable {
     Socket serverSocket = null, newClientConnection = null;
-    public PassThroughRequestWaiter(Socket _serverSocket, Socket _newClientConnection) {
+    PrintWriter requestToServer = null;
+    public PassThroughRequestWaiter(Socket _serverSocket, Socket _newClientConnection, PrintWriter _requestToServer) {
       serverSocket = _serverSocket;
       newClientConnection = _newClientConnection;
+      requestToServer = _requestToServer;
     }
     public void run() {
       BufferedReader requestFromClient = null, responseFromServer = null;
-      PrintWriter requestToServer = null, responseToClient = null;
+      PrintWriter responseToClient = null;
       try {
         requestFromClient = new BufferedReader(new InputStreamReader(newClientConnection.getInputStream()));
         requestToServer = new PrintWriter(serverSocket.getOutputStream(), true);

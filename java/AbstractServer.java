@@ -34,7 +34,7 @@ public class AbstractServer {
             System.err.println("Unable to listen for more server connections.");
             throw e;
           }
-          new Thread(new RequestWaiter(responder, clientSocket)).start();
+          new Thread(new RequestWaiter(responder, clientSocket, null)).start();
         }
 
       } else { // must have supplied a host & port for relay
@@ -43,13 +43,20 @@ public class AbstractServer {
         int port = Integer.valueOf(args[1]).intValue();
 
         while(true) {
+          BufferedReader incoming = null;
           try {
+System.out.println("... about to get socket");
             clientSocket = new Socket(host, port);
+System.out.println("... got socket " + new java.util.Date());
+            incoming = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+            System.out.println(incoming.readLine()); // tell the relayed host & port
           } catch (IOException e) {
             System.err.println("Unable to route through relay server.");
             throw e;
+          } finally {
+            try { incoming.close(); } catch (Exception e) {}
           }
-          new Thread(new RequestWaiter(responder, clientSocket)).start();
+          new Thread(new RequestWaiter(responder, clientSocket, incoming)).start();
         }
       }
 
@@ -64,7 +71,8 @@ public class AbstractServer {
   public static class RequestWaiter implements Runnable {
     private Responder responder = null;
     private Socket clientSocket = null;
-    public RequestWaiter(Responder _responder, Socket _clientSocket) throws IOException {
+    private BufferedReader incoming = null;
+    public RequestWaiter(Responder _responder, Socket _clientSocket, BufferedReader _incoming) throws IOException {
       responder = _responder;
       clientSocket = _clientSocket;
     }
@@ -73,7 +81,6 @@ public class AbstractServer {
     */
     public void run() {
       PrintWriter outgoing = null;
-      BufferedReader incoming = null;
       try {
         incoming = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
         outgoing = new PrintWriter(clientSocket.getOutputStream(), true);
@@ -87,7 +94,7 @@ public class AbstractServer {
         System.err.println("Got error communicating messages.");
         e.printStackTrace();
       } finally {
-        try { incoming.close(); } catch (Exception e) {}
+        try { incoming.close(); } catch (Exception e) {} // should let outer if passed in
         try { outgoing.close(); } catch (Exception e) {}
       }
     }    
