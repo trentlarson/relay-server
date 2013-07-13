@@ -2,7 +2,7 @@
 import java.io.*;
 import java.net.*;
 
-public class AbstractServer {
+public class ServerDirectOrRelayed {
   
   protected interface Responder {
     public String response(String request);
