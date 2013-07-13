@@ -25,7 +25,6 @@ public class Relay {
         } catch (IOException e) {
           System.err.println("Unable to open " + port + " to start relay.");
           e.printStackTrace();
-          System.exit(1);
           try { newServerServerSocket.close(); } catch (Exception e2) {}
         }
 
@@ -35,7 +34,6 @@ public class Relay {
           } catch (IOException e) {
             System.err.println("Unable to listen for more server connections.");
             e.printStackTrace();
-            System.exit(1);
           }
 
           System.out.println( "???? THE SERVER"+" "+ newServerConnection.getInetAddress() +":"+newServerConnection.getPort()+" IS CONNECTED ");
@@ -82,7 +80,6 @@ public class Relay {
           } catch (IOException e) {
             System.err.println("Unable to listen for more client connections.");
             e.printStackTrace();
-            System.exit(1);
           }
 
           System.out.println( "???? THE client"+" "+ newClientConnection.getInetAddress() +":"+newClientConnection.getPort()+" IS CONNECTED ");
@@ -104,7 +101,6 @@ public class Relay {
           } catch (IOException e) {
             System.err.println("Unable to read request or write response.");
             e.printStackTrace();
-            System.exit(1);
           }
         } finally {
           try { requestFromClient.close(); } catch (Exception e) {}
