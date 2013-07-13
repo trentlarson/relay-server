@@ -32,7 +32,7 @@ public class AbstractServer {
           } catch (IOException e) {
             throw new IOException("Unable to listen for more server connections.", e);
           }
-          new Thread(new RequestWaiter(responder, clientSocket, null)).start();
+          new Thread(new RequestWaiter(responder, clientSocket, null, null)).start();
         }
 
       } else { // must have supplied a host & port for relay
@@ -41,16 +41,19 @@ public class AbstractServer {
         int port = Integer.valueOf(args[1]).intValue();
 
           BufferedReader incoming = null;
+          PrintWriter outgoing = null;
           try {
             clientSocket = new Socket(host, port);
             incoming = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+            outgoing = new PrintWriter(clientSocket.getOutputStream(), true);
             String message = incoming.readLine();
             System.out.println(message); // tell the relayed host & port
           } catch (IOException e) {
             try { incoming.close(); } catch (Exception e2) {}
+            try { outgoing.close(); } catch (Exception e2) {}
             throw new IOException("Unable to route through relay server.", e);
           }
-          new Thread(new RequestWaiter(responder, clientSocket, incoming)).start();
+          new Thread(new RequestWaiter(responder, clientSocket, incoming, outgoing)).start();
           System.out.println("??? done with main");
 
       }
@@ -67,21 +70,24 @@ public class AbstractServer {
     private Responder responder = null;
     private Socket clientSocket = null;
     private BufferedReader incoming = null;
-    public RequestWaiter(Responder _responder, Socket _clientSocket, BufferedReader _incoming) throws IOException {
+    private PrintWriter outgoing = null;
+    public RequestWaiter(Responder _responder, Socket _clientSocket, BufferedReader _incoming, PrintWriter _outgoing) throws IOException {
       responder = _responder;
       clientSocket = _clientSocket;
       incoming = _incoming;
+      outgoing = _outgoing;
     }
     /**
        Loop forever, responding appropriately to requests.
     */
     public void run() {
-      PrintWriter outgoing = null;
       try {
         if (incoming == null) {
           incoming = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
         }
-        outgoing = new PrintWriter(clientSocket.getOutputStream(), true);
+        if (outgoing == null) {
+          outgoing = new PrintWriter(clientSocket.getOutputStream(), true);
+        }
       
         String messageIn = incoming.readLine();
         while (messageIn != null) {
