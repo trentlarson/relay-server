@@ -58,6 +58,9 @@ create new ServerSocket for server to reconnect... allow multiple
 clients with different connections?
 - bash scripts
 - may want to make that abstract main work
+- help for relay
+- do I block, since 2 while loops in Relay?
+
 
 start 12... pause at 12:30... for ?
 done at 3:17?

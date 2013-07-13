@@ -24,8 +24,7 @@ public class Relay {
           newServerServerSocket = new ServerSocket(port);
         } catch (IOException e) {
           System.err.println("Unable to open " + port + " to start relay.");
-          e.printStackTrace();
-          try { newServerServerSocket.close(); } catch (Exception e2) {}
+          throw e;
         }
 
         while (true) {
@@ -33,7 +32,7 @@ public class Relay {
             newServerConnection = newServerServerSocket.accept();
           } catch (IOException e) {
             System.err.println("Unable to listen for more server connections.");
-            e.printStackTrace();
+            throw e;
           }
 
           System.out.println( "???? THE SERVER"+" "+ newServerConnection.getInetAddress() +":"+newServerConnection.getPort()+" IS CONNECTED ");
@@ -53,6 +52,8 @@ public class Relay {
           PassThroughServerSocket ptss = new PassThroughServerSocket(newServerConnection, clientServerSocket);
           new Thread(ptss).start();
         }
+      } catch (IOException e) {
+        e.printStackTrace();
       } finally {
         try { newServerConnection.close(); } catch (Exception e) {}
         try { newServerServerSocket.close(); } catch (Exception e) {}
@@ -79,7 +80,7 @@ public class Relay {
             newClientConnection = clientServerSocket.accept();
           } catch (IOException e) {
             System.err.println("Unable to listen for more client connections.");
-            e.printStackTrace();
+            throw e;
           }
 
           System.out.println( "???? THE client"+" "+ newClientConnection.getInetAddress() +":"+newClientConnection.getPort()+" IS CONNECTED ");
@@ -100,8 +101,12 @@ public class Relay {
 
           } catch (IOException e) {
             System.err.println("Unable to read request or write response.");
-            e.printStackTrace();
+            throw e;
           }
+
+
+        } catch (IOException e) {
+          e.printStackTrace();
         } finally {
           try { requestFromClient.close(); } catch (Exception e) {}
           try { responseFromServer.close(); } catch (Exception e) {}
