@@ -27,14 +27,14 @@ public class Relay {
           throw new IOException("Unable to open " + port + " to start relay.", e);
         }
 
-        while (true) {
+        while (true) { // loop forever, accepting new servers
           try {
             newServerConnection = newServerServerSocket.accept();
           } catch (IOException e) {
             throw new IOException("Unable to listen for more server connections.", e);
           }
 
-          System.out.println( "???? THE SERVER"+" "+ newServerConnection.getInetAddress() +":"+newServerConnection.getPort()+" IS CONNECTED ");
+          //System.out.println( "server connected: " + newServerConnection.getInetAddress() + ":" + newServerConnection.getPort());
             
           int portForServer = findNextOpenPortAbove(lastUsedPort);
           PassThroughServerSocket ptss = new PassThroughServerSocket(newServerConnection, portForServer);
@@ -60,26 +60,30 @@ public class Relay {
     }
     public void run() {
       ServerSocket clientServerSocket = null;
+      PrintWriter requestToServer = null;
+      BufferedReader responseFromServer = null;
       try {
 
-        PrintWriter requestToServer = new PrintWriter(serverSocket.getOutputStream(), true);
-        BufferedReader responseFromServer = new BufferedReader(new InputStreamReader(serverSocket.getInputStream()));
+        requestToServer = new PrintWriter(serverSocket.getOutputStream(), true);
+        responseFromServer = new BufferedReader(new InputStreamReader(serverSocket.getInputStream()));
 
         requestToServer.println(host + ":" + clientPort);
 
         clientServerSocket = new ServerSocket(clientPort);
-        while (true) {
-            
+        while (true) { // loop forever
+
           Socket newClientConnection = clientServerSocket.accept();
             
-          System.out.println( "???? THE client"+" "+ newClientConnection.getInetAddress() +":"+newClientConnection.getPort()+" IS CONNECTED ");
+          //System.out.println( "client connected: " + newClientConnection.getInetAddress() + ":" + newClientConnection.getPort());
             
           new Thread(new PassThroughRequestWaiter(serverSocket, newClientConnection, requestToServer, responseFromServer)).start();
-            
+          
         }
       } catch (IOException e) {
         e.printStackTrace();
       } finally {
+        try { responseFromServer.close(); } catch (Exception e) {}
+        try { requestToServer.close(); } catch (Exception e) {}
         try { clientServerSocket.close(); } catch (Exception e) {}
       }
     }
@@ -104,7 +108,7 @@ public class Relay {
         responseToClient = new PrintWriter(newClientConnection.getOutputStream(), true);
 
         String messageIn = requestFromClient.readLine();
-        while (messageIn != null) {
+        while (messageIn != null) { // loop until the stream is closed
           requestToServer.println(messageIn);
           String messageBack = responseFromServer.readLine();
           responseToClient.println(messageBack);
@@ -115,8 +119,6 @@ public class Relay {
         e.printStackTrace();
       } finally {
         try { requestFromClient.close(); } catch (Exception e) {}
-        try { responseFromServer.close(); } catch (Exception e) {}
-        try { requestToServer.close(); } catch (Exception e) {}
         try { responseToClient.close(); } catch (Exception e) {}
         try { newClientConnection.close(); } catch (Exception e) {}
       }

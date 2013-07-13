@@ -26,7 +26,7 @@ public class AbstractServer {
           throw new IOException("Unable to open " + port + " to start server.", e);
         }
 
-        while(true) {
+        while(true) { // loop forever, spawning threads for each connection
           try {
             clientSocket = serverSocket.accept();
           } catch (IOException e) {
@@ -91,7 +91,7 @@ public class AbstractServer {
     public void run() {
       try {
         String messageIn = incoming.readLine();
-        while (messageIn != null) {
+        while (messageIn != null) { // loop until the stream is closed
           outgoing.println(responder.response(messageIn));
           messageIn = incoming.readLine();
         }
