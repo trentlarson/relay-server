@@ -73,8 +73,6 @@ public class Relay {
     public void run() {
       while (true) {
         Socket newClientConnection = null;
-        BufferedReader requestFromClient = null, responseFromServer = null;
-        PrintWriter requestToServer = null, responseToClient = null;
         try {
           try {
             newClientConnection = clientServerSocket.accept();
@@ -85,41 +83,53 @@ public class Relay {
 
           System.out.println( "???? THE client"+" "+ newClientConnection.getInetAddress() +":"+newClientConnection.getPort()+" IS CONNECTED ");
           
-          try {
-            requestFromClient = new BufferedReader(new InputStreamReader(newClientConnection.getInputStream()));
-            requestToServer = new PrintWriter(serverSocket.getOutputStream(), true);
-            responseFromServer = new BufferedReader(new InputStreamReader(serverSocket.getInputStream()));
-            responseToClient = new PrintWriter(newClientConnection.getOutputStream(), true);
-
-            String messageIn = requestFromClient.readLine();
-            while (messageIn != null) {
-              requestToServer.println(messageIn);
-              String messageBack = responseFromServer.readLine();
-              responseToClient.println(messageBack);
-              messageIn = requestFromClient.readLine();
-            }
-
-          } catch (IOException e) {
-            System.err.println("Unable to read request or write response.");
-            throw e;
-          }
-
+          new Thread(new PassThroughRequestWaiter(serverSocket, newClientConnection)).start();
 
         } catch (IOException e) {
           e.printStackTrace();
         } finally {
-          try { requestFromClient.close(); } catch (Exception e) {}
-          try { responseFromServer.close(); } catch (Exception e) {}
-          try { requestToServer.close(); } catch (Exception e) {}
-          try { responseToClient.close(); } catch (Exception e) {}
           try { newClientConnection.close(); } catch (Exception e) {}
         }
             
       }
     }
   }
+    
 
+  public static class PassThroughRequestWaiter implements Runnable {
+    Socket serverSocket = null, newClientConnection = null;
+    public PassThroughRequestWaiter(Socket _serverSocket, Socket _newClientConnection) {
+      serverSocket = _serverSocket;
+      newClientConnection = _newClientConnection;
+    }
+    public void run() {
+      BufferedReader requestFromClient = null, responseFromServer = null;
+      PrintWriter requestToServer = null, responseToClient = null;
+      try {
+        requestFromClient = new BufferedReader(new InputStreamReader(newClientConnection.getInputStream()));
+        requestToServer = new PrintWriter(serverSocket.getOutputStream(), true);
+        responseFromServer = new BufferedReader(new InputStreamReader(serverSocket.getInputStream()));
+        responseToClient = new PrintWriter(newClientConnection.getOutputStream(), true);
 
+        String messageIn = requestFromClient.readLine();
+        while (messageIn != null) {
+          requestToServer.println(messageIn);
+          String messageBack = responseFromServer.readLine();
+          responseToClient.println(messageBack);
+          messageIn = requestFromClient.readLine();
+        }
+
+      } catch (IOException e) {
+        e.printStackTrace();
+      } finally {
+        try { requestFromClient.close(); } catch (Exception e) {}
+        try { responseFromServer.close(); } catch (Exception e) {}
+        try { requestToServer.close(); } catch (Exception e) {}
+        try { responseToClient.close(); } catch (Exception e) {}
+      }
+
+    }
+  }
 }
 
 
