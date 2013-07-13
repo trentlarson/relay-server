@@ -62,6 +62,9 @@ clients with different connections?
 - remove System.outs
 - wrap exceptions in others
 - remove ???
+- close threads at the end?
+- add host parameter to Relay
+
 
 start 12... pause at 12:30... for ?
 done at 3:17?

@@ -6,6 +6,7 @@ import java.util.*;
 public class Relay {
 
   public static HashMap<Integer, ServerSocket> serverSockets = new HashMap<Integer, ServerSocket>();
+  public static String host = "localhost";
   public static int lastUsedPort = 8080;
 
   public static void main(String[] args) {
@@ -62,21 +63,17 @@ public class Relay {
       try {
         clientServerSocket = new ServerSocket(clientPort);
         while (true) {
-          Socket newClientConnection = null;
-          try {
             
-            PrintWriter requestToServer = new PrintWriter(serverSocket.getOutputStream(), true);
-            requestToServer.println(serverSocket.getInetAddress().getHostAddress() + ":" + serverSocket.getPort());
+          PrintWriter requestToServer = new PrintWriter(serverSocket.getOutputStream(), true);
+          // for host, serverSocket.getInetAddress() gives 127.0.0.1
+          requestToServer.println(host + ":" + clientPort);
+          
+          Socket newClientConnection = clientServerSocket.accept();
             
-            newClientConnection = clientServerSocket.accept();
+          System.out.println( "???? THE client"+" "+ newClientConnection.getInetAddress() +":"+newClientConnection.getPort()+" IS CONNECTED ");
             
-            System.out.println( "???? THE client"+" "+ newClientConnection.getInetAddress() +":"+newClientConnection.getPort()+" IS CONNECTED ");
+          new Thread(new PassThroughRequestWaiter(serverSocket, newClientConnection, requestToServer)).start();
             
-            new Thread(new PassThroughRequestWaiter(serverSocket, newClientConnection, requestToServer)).start();
-            
-          } finally {
-            try { newClientConnection.close(); } catch (Exception e) {}
-          }
         }
       } catch (IOException e) {
         e.printStackTrace();
@@ -100,7 +97,6 @@ public class Relay {
       PrintWriter responseToClient = null;
       try {
         requestFromClient = new BufferedReader(new InputStreamReader(newClientConnection.getInputStream()));
-        requestToServer = new PrintWriter(serverSocket.getOutputStream(), true);
         responseFromServer = new BufferedReader(new InputStreamReader(serverSocket.getInputStream()));
         responseToClient = new PrintWriter(newClientConnection.getOutputStream(), true);
 
@@ -119,6 +115,7 @@ public class Relay {
         try { responseFromServer.close(); } catch (Exception e) {}
         try { requestToServer.close(); } catch (Exception e) {}
         try { responseToClient.close(); } catch (Exception e) {}
+        try { newClientConnection.close(); } catch (Exception e) {}
       }
 
     }
