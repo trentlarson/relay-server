@@ -2,14 +2,14 @@
 import java.io.*;
 import java.net.*;
 
-public class EchoServer {
+public class EchoServer extends ServerDirectOrRelayed {
   
+  public String response(String request) {
+    return request;
+  }
+
   public static void main(String[] args) {
-    ServerDirectOrRelayed.runServer(args, new ServerDirectOrRelayed.Responder() {
-        public String response(String request) {
-          return request;
-        }
-      });
-  } 
+    new EchoServer().runServer(args);
+  }
 
 }

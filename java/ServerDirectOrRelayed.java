@@ -2,13 +2,11 @@
 import java.io.*;
 import java.net.*;
 
-public class ServerDirectOrRelayed {
+public abstract class ServerDirectOrRelayed {
   
-  protected interface Responder {
-    public String response(String request);
-  }
+  public abstract String response(String request);
 
-  public static void runServer(String[] args, Responder responder) {
+  public void runServer(String[] args) {
 
     ServerSocket serverSocket = null;
     Socket clientSocket = null;
@@ -32,7 +30,7 @@ public class ServerDirectOrRelayed {
           } catch (IOException e) {
             throw new IOException("Unable to listen for more server connections.", e);
           }
-          new Thread(new RequestWaiter(responder, clientSocket, null, null)).start();
+          new Thread(new RequestWaiter(clientSocket, null, null)).start();
         }
 
       } else { // must have supplied a host & port for relay
@@ -53,7 +51,7 @@ public class ServerDirectOrRelayed {
           try { outgoing.close(); } catch (Exception e2) {}
           throw new IOException("Unable to route through relay server.", e);
         }
-        new Thread(new RequestWaiter(responder, clientSocket, incoming, outgoing)).start();
+        new Thread(new RequestWaiter(clientSocket, incoming, outgoing)).start();
         
         while (true) { // loop forever while listening across the relay line
           try { Thread.currentThread().sleep(10000); } catch (InterruptedException e) {}
@@ -69,13 +67,11 @@ public class ServerDirectOrRelayed {
     }
   }
 
-  public static class RequestWaiter implements Runnable {
-    private Responder responder = null;
+  public class RequestWaiter implements Runnable {
     private Socket clientSocket = null;
     private BufferedReader incoming = null;
     private PrintWriter outgoing = null;
-    public RequestWaiter(Responder _responder, Socket _clientSocket, BufferedReader _incoming, PrintWriter _outgoing) throws IOException {
-      responder = _responder;
+    public RequestWaiter(Socket _clientSocket, BufferedReader _incoming, PrintWriter _outgoing) throws IOException {
       clientSocket = _clientSocket;
       incoming = _incoming;
       outgoing = _outgoing;
@@ -94,7 +90,7 @@ public class ServerDirectOrRelayed {
       try {
         String messageIn = incoming.readLine();
         while (messageIn != null) { // loop until the stream is closed
-          outgoing.println(responder.response(messageIn));
+          outgoing.println(response(messageIn));
           messageIn = incoming.readLine();
         }
       } catch (IOException e) {
