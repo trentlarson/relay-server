@@ -52,35 +52,31 @@ Hello, world
 
 Still to do:
 - test scripts
-- bash scripts
 
 
 
-start 12... pause at 12:30... for ?
-done at 3:17?
-no, 4:17
-figured out port conflict at 5:04
-finished 6:24
 
-Assumptions:
 
-I can use a server/socket library (eg. for Java, for node).
+Here are my assumptions.  I'm going ahead with this rather than asking
+and waiting for answers, so gently point out if there's anything I'm
+thinking that is just plain missing the point.
 
-I can ignore problems of too much data (eg. 10 GB of data without a newline).
+I can use a server/socket library (eg. for Java).
 
-I assume that these two sentences cover the same requirement:
+These two sentences cover the same requirement:
 "it should output on stdout what its new public address is"
 "this requires your relay server interface to notify relayed clients of their public address"
-(In other words, it's possible that your second sentence means there is some other notification method that is required, but I think not.)
+(In other words, it's possible that your second sentence means there is some other notification method that is required, but I'm assuming not.)
 
-I don't have to provide all the help info I typically would spend time on (eg. if they provide a port of "xyz").
-
-I can ignore problems of too many servers, too many clients,
-connections being open for too long, or disconnects (since you said we
-won't "initiate" any connections)... essentially, all those pesky
-high-traffic concerns.
-
-I can do my own thing if a server shuts down (like return "null" to clients).
+I don't have to provide great usability info (eg. if they provide a
+port of "xyz"), or even build instructions.
 
 I don't have to write signals back-and-forth for when, say, the relay
-shuts down or when the servers shut down.
+shuts down or when the servers shut down.  I can do my own thing if a
+server shuts down (like return "null" or blank responses to clients).
+
+I can ignore problems of too much data on one newline, too many
+servers, too many clients, connections being open for too long, or
+disconnects (since you said we won't "initiate" any
+connections)... essentially, all those pesky high-traffic concerns.
+
