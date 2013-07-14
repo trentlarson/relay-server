@@ -55,22 +55,63 @@ Hello, world
 
 
 Explanation of Relay Server by Trent
-  (and let's all assume there's one running publicly at RST.com on port 8080)
+  (... and let's all assume there's one running publicly at RST.com on port 8080)
 
 Is your service hidden... trapped behind a firewall, or somehow
 inaccessible to the world at large?  If so, use our server at RST.com
-to make your service available to everyone.  It's simple:
+to make your service available to everyone.  It's straightforward:
+your server currently listens for any incoming connections, so you'll
+modify it to instead: 
 
-Your server currently listens for any incoming connections.  Modify
-your server to instead:
-- make a single connection to our server at RST.com:8080,
-- accept one HOST:PORT line of input for your new public address,
-then sit and respond on that one socket for all your clients.
+- make a single connection to our server at RST.com:8080
 
-We'll manage the ports, and we'll forward each of your users' requests
-to that connection created with our server.  All you have to do is
-advertise to everyone the HOST:PORT that we sent back when you made
-the connection; give it to all your users, and they'll be able to
-connect to your application from anywhere.
+- accept one HOST:PORT line of input for your new public address
+
+- then sit and respond to that one client, and we'll route everyone to you.
+
+We'll manage the ports and we'll forward each of your users' requests.
+All you have to do is advertise to everyone the HOST:PORT that we sent
+back when you made the connection; give it to all your users, and
+they'll be able to connect to your application from anywhere.
 
 
+Let's give a quick Java code example to show how.  Assume you've got
+some class or method that runs your inner loops for one client, like
+so:
+
+  public class RequestWaiter implements Runnable {
+    ...
+    public void run() {
+      ...
+        String messageIn = incoming.readLine();
+        while (messageIn != null) { // loop until the stream is closed
+          outgoing.println(response(messageIn));
+          messageIn = incoming.readLine();
+        }
+      ...
+    }
+    ...
+  }
+
+
+You've also got an outer loop that accepts client connections;
+probably something like this, which calls our sample "RequestWaiter"
+for each client connection you get:
+
+        serverSocket = new ServerSocket(port);
+        while(true) { // loop forever, spawning a thread for each new client
+          clientSocket = serverSocket.accept();
+          new Thread(new RequestWaiter(clientSocket)).start();
+        }
+
+
+Here's the change: instead of listening for all your clients, use
+something like this to make one connection to our relay, get the new
+host and port, and then treat that like your only client:
+
+        clientSocket = new Socket("RST.com", 8080); // this is our service
+        incoming = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+        publicHostAndPort = incoming.readLine(); // publish this to the world: it points to you
+        new Thread(new RequestWaiter(clientSocket)).start();
+
+You're public.  Enjoy!

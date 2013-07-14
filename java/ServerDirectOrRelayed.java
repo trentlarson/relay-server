@@ -24,7 +24,7 @@ public abstract class ServerDirectOrRelayed {
           throw new IOException("Unable to open " + port + " to start server.", e);
         }
 
-        while(true) { // loop forever, spawning threads for each connection
+        while(true) { // loop forever, spawning a thread for each new client
           try {
             clientSocket = serverSocket.accept();
           } catch (IOException e) {
@@ -44,8 +44,8 @@ public abstract class ServerDirectOrRelayed {
           clientSocket = new Socket(host, port);
           incoming = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
           outgoing = new PrintWriter(clientSocket.getOutputStream(), true);
-          String message = incoming.readLine();
-          System.out.println(message); // tell the relayed host & port
+          String publicHostAndPort = incoming.readLine();
+          System.out.println(publicHostAndPort); // publish this to the world
         } catch (IOException e) {
           try { incoming.close(); } catch (Exception e2) {}
           try { outgoing.close(); } catch (Exception e2) {}
