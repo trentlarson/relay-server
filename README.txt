@@ -111,7 +111,7 @@ host and port, and then treat that like your only client:
 
         clientSocket = new Socket("RST.com", 8080); // this is our service
         incoming = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-        publicHostAndPort = incoming.readLine(); // publish this to the world: it points to you
-        new Thread(new RequestWaiter(clientSocket)).start();
+        publicHostAndPort = incoming.readLine(); // publish this to the world: it goes to you
+        new RequestWaiter(clientSocket).run();
 
-You're public.  Enjoy!
+You're ready for the world.
