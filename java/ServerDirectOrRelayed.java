@@ -55,12 +55,14 @@ public class ServerDirectOrRelayed {
         }
         new Thread(new RequestWaiter(responder, clientSocket, incoming, outgoing)).start();
         
-        while (true) { } // loop forever while the thread runs
+        while (true) { // loop forever while listening across the relay line
+          try { Thread.currentThread().sleep(10000); } catch (InterruptedException e) {}
+        }
 
       }
 
     } catch (IOException e) {
-      e.printStackTrace();
+      throw new RuntimeException(e);
     } finally {
       try { clientSocket.close(); } catch (Exception e) {}
       try { serverSocket.close(); } catch (Exception e) {}

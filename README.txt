@@ -51,12 +51,9 @@ Hello, world
 
 
 Still to do:
-- ensure different IPs work
 - test scripts
 - bash scripts
--- help for relay
-- - error level param
-- - add host parameter to Relay
+
 
 
 start 12... pause at 12:30... for ?
