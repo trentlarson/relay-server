@@ -48,12 +48,27 @@ Hello, world
 Hello, world
 
 
+________________________________________________________________________________
+Assumptions
+
+Here are my assumptions.  I'm going ahead with this rather than asking and waiting for answers, so gently point out if there's anything I'm thinking that is just plain missing the point.
+
+I can use a server/socket library (eg. for Java).
+
+These two sentences cover the same requirement:
+"it should output on stdout what its new public address is"
+"this requires your relay server interface to notify relayed clients of their public address"
+(In other words, it's possible that your second sentence means there is some other notification method that is required, but I'm assuming not.)
+
+I don't have to provide great usability info (eg. if they provide a port of "xyz"), or build instructions.  (It'll be in Java; I'll provide the class files.)
+
+I don't have to write signals back-and-forth for when, say, the relay shuts down or when the servers shut down.  I can do my own thing if a server shuts down (like return "null" or blank responses to clients).
+
+I can ignore problems of too much data on one newline, too many servers, too many clients, connections being open for too long, or disconnects (since you said we won't "initiate" any connections)... essentially, all those pesky high-traffic concerns.
 
 
 
-
-
-
+________________________________________________________________________________
 Explanation of Relay Server by Trent
   (... and let's all assume there's one running publicly at RST.com on port 8080)
 
@@ -61,11 +76,11 @@ Is your service hidden... trapped behind a firewall, or somehow
 inaccessible to the world at large?  If so, use our server at RST.com
 to make your service available to everyone.  It's straightforward:
 your server currently listens for any incoming connections, so you'll
-modify it to instead: 
+modify it to do this instead: 
 
-- make a single connection to our server at RST.com:8080
+- Make a single connection to our server at RST.com:8080,
 
-- accept one HOST:PORT line of input for your new public address
+- accept one HOST:PORT line of input for your new public address,
 
 - then sit and respond to that one client, and we'll route everyone to you.
 
