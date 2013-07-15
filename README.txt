@@ -168,9 +168,9 @@ Here's the change: instead of listening for all your clients, just
 make one connection to our relay, get the public HOST:PORT, and then
 treat that like your only client:
 
-        clientSocket = new Socket("RST.com", 8080); // this is our service
+        clientSocket = new Socket("1234.amazonaws.com", 8888); // for the relay server
         incoming = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-        publicHostAndPort = incoming.readLine(); // publish this to the world: it goes to you
+        publicHostAndPort = incoming.readLine(); // publish this to the world: it redirects to you
         new RequestWaiter(clientSocket).run();
 
-You're ready for the world.
+Now give everyone the HOST:PORT that you got back on that third line... and you're ready for the world.
