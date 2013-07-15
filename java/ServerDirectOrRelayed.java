@@ -51,11 +51,7 @@ public abstract class ServerDirectOrRelayed {
           try { outgoing.close(); } catch (Exception e2) {}
           throw new IOException("Unable to route through relay server.", e);
         }
-        new Thread(new RequestWaiter(clientSocket, incoming, outgoing)).start();
-        
-        while (true) { // loop forever while listening across the relay line
-          try { Thread.currentThread().sleep(10000); } catch (InterruptedException e) {}
-        }
+        new RequestWaiter(clientSocket, incoming, outgoing).run();
 
       }
 
