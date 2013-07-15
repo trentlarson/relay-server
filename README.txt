@@ -69,30 +69,74 @@ I can ignore problems of too much data on one newline, too many servers, too man
 
 
 ________________________________________________________________________________
-Explanation of Relay Server by Trent
-  (... and let's all assume there's one running publicly at RST.com on port 8080)
+Explanation of Relay Server
 
-Is your service hidden... trapped behind a firewall, or somehow
-inaccessible to the world at large?  If so, use our server at RST.com
-to make your service available to everyone.  It's straightforward:
-your server currently listens for any incoming connections, so you'll
-modify it to do this instead: 
+This relay server is your public intermediary to the rest of the
+world, giving access to your own server that may be sitting behind a
+firewall.
 
-- Make a single connection to our server at RST.com:8080,
+To run it, choose a public server (eg. in AWS) and make sure Java
+(1.6+) is installed.  We'll assume that server has the public address
+of 12345.amazonaws.com.  Unpack the relay server:
+
+tar -xvf relay.tgz
+cd relay
+
+
+
+You can run it in basic mode using localhost and port 8080 by default:
+
+relay &
+
+
+
+... but it's best to customize the address you're using, and probably the port:
+
+relay -h 12345.amazonaws.com 8888 &
+
+
+
+If you want to see all connections made to the server for debugging, use the -v option:
+
+relay -h 12345.amazonaws.com -v 8888 &
+
+
+
+Now, the relay server will accept connections from clients anywhere
+and forward them along to your server... once you make a few changes
+to your server.
+
+
+
+
+
+CHANGES TO YOUR SERVER
+
+Now you have to modify your own server: it needs to register itself
+and retrieve it's own public address.  Here's how: your server
+currently listens for any incoming connections, so you'll modify it to
+do this instead:
+
+- Make a single connection to your relay server running at 1234.amazonaws.com:8888
 
 - accept one HOST:PORT line of input for your new public address,
 
-- then sit and respond to that one client, and we'll route everyone to you.
+- then sit and respond to that one client, and the relay server will route everyone to you.
 
-We'll manage the ports and we'll forward each of your users' requests.
-All you have to do is advertise to everyone the HOST:PORT that we sent
-back when you made the connection; give it to all your users, and
-they'll be able to connect to your application from anywhere.
+It will manage the ports and forward each of your users' requests.
+All you have to do is advertise to everyone the HOST:PORT that the
+relay server sent back when you made the connection; using the
+previous settings, it'll probably choose the next port and return
+something like this:
 
+1234.amazonaws.com:8889
 
-Let's give a quick Java code example to show how.  Assume you've got
-some class or method that runs your inner loops for one client, like
-so:
+Now you can give that address to all your users and they'll be able to
+connect to your application from anywhere.
+
+Let's give a quick Java code example to demonstrate how you need to
+modify your server.  Assume you've got some class or method that runs
+your inner loops for one client, like so:
 
   public class RequestWaiter implements Runnable {
     ...
@@ -110,8 +154,8 @@ so:
 
 
 You've also got an outer loop that accepts client connections;
-probably something like this, which calls our sample "RequestWaiter"
-for each client connection you get:
+probably something like this, which calls the sample RequestWaiter for
+each client connection you get:
 
         serverSocket = new ServerSocket(port);
         while(true) { // loop forever, spawning a thread for each new client
@@ -120,9 +164,9 @@ for each client connection you get:
         }
 
 
-Here's the change: instead of listening for all your clients, use
-something like this to make one connection to our relay, get the new
-host and port, and then treat that like your only client:
+Here's the change: instead of listening for all your clients, just
+make one connection to our relay, get the public HOST:PORT, and then
+treat that like your only client:
 
         clientSocket = new Socket("RST.com", 8080); // this is our service
         incoming = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
