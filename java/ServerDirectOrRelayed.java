@@ -8,9 +8,7 @@ public abstract class ServerDirectOrRelayed {
 
   public void runServer(String[] args) {
 
-    ServerSocket serverSocket = null;
     Socket clientSocket = null;
-    Socket clientAddressSocket = null;
 
     try {
 
@@ -22,19 +20,24 @@ public abstract class ServerDirectOrRelayed {
 
         int port = Integer.valueOf(args[0]).intValue();
 
-        serverSocket = new ServerSocket(port);
+        ServerSocket serverSocket = null;
+        try {
+          serverSocket = new ServerSocket(port);
 
-        while(true) { // loop forever, spawning a thread for each new client
-          clientSocket = serverSocket.accept();
-          new Thread(new ResponseHandler(clientSocket)).start();
+          while(true) { // loop forever, spawning a thread for each new client
+            clientSocket = serverSocket.accept();
+            new Thread(new ResponseHandler(clientSocket)).start();
+          }
+        } finally {
+          try { serverSocket.close(); } catch (Exception e) {}
         }
-
 
       } else { // must have supplied a host & port for relay
         
         String host = args[0];
         int port = Integer.valueOf(args[1]).intValue();
 
+        Socket clientAddressSocket = null;
         BufferedReader incoming = null;
         try {
           clientAddressSocket = new Socket(host, port);
@@ -58,6 +61,7 @@ public abstract class ServerDirectOrRelayed {
           }
         } finally {
           try { incoming.close(); } catch (Exception e2) {}
+          try { clientAddressSocket.close(); } catch (Exception e2) {}
         }
 
       }
@@ -66,7 +70,6 @@ public abstract class ServerDirectOrRelayed {
       throw new RuntimeException(e);
     } finally {
       try { clientSocket.close(); } catch (Exception e) {}
-      try { serverSocket.close(); } catch (Exception e) {}
     }
   }
 
