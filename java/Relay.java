@@ -55,7 +55,8 @@ public class Relay {
           throw new IOException("Unable to listen for more server connections.", e);
         }
 
-        if (verbose > 0) System.out.println( "server connected: " + newServerConnection.getInetAddress() + ":" + newServerConnection.getPort());
+        if (verbose > 0) System.out.println( "server connected: " + newServerConnection.getInetAddress()
+                                             + ":" + newServerConnection.getPort());
             
         int portForServer = findNextOpenPortAbove(port);
         PassThroughServerSocket ptss = new PassThroughServerSocket(newServerConnection, host, portForServer);
@@ -97,9 +98,11 @@ public class Relay {
 
           Socket newClientConnection = clientServerSocket.accept();
             
-          if (verbose > 0) System.out.println( "client connected: " + newClientConnection.getInetAddress() + ":" + newClientConnection.getPort());
+          if (verbose > 0) System.out.println( "client connected: " + newClientConnection.getInetAddress()
+                                               + ":" + newClientConnection.getPort());
             
-          new Thread(new ClientPassThroughRequestWaiter(serverSocket, newClientConnection, requestToServer, responseFromServer)).start();
+          new Thread(new ClientPassThroughRequestWaiter(serverSocket, newClientConnection,
+                                                        requestToServer, responseFromServer)).start();
           
         }
       } catch (IOException e) {
@@ -130,7 +133,8 @@ public class Relay {
     Socket serverSocket = null, newClientConnection = null;
     PrintWriter requestToServer = null;
     BufferedReader responseFromServer = null;
-    public ClientPassThroughRequestWaiter(Socket _serverSocket, Socket _newClientConnection, PrintWriter _requestToServer, BufferedReader _responseFromServer) {
+    public ClientPassThroughRequestWaiter(Socket _serverSocket, Socket _newClientConnection,
+                                          PrintWriter _requestToServer, BufferedReader _responseFromServer) {
       serverSocket = _serverSocket;
       newClientConnection = _newClientConnection;
       requestToServer = _requestToServer;
@@ -142,13 +146,15 @@ public class Relay {
         newServerServerSocketForClient = new ServerSocket(newPortForServer);
         ServerConnectionForClient connForClient = new ServerConnectionForClient();
         new Thread(new ServerNewConnectionWaiter(newServerServerSocketForClient, connForClient)).start();
-        requestToServer.println(host + ":" + newPortForServer); // tell server new port for linking to this client
+        requestToServer.println(host + ":" + newPortForServer); // send port for linking to this client
         // now hang out and wait until the ServerConnectionForClient is filled in
         while (connForClient.serverSocket == null) {
           try {
             Thread.currentThread().sleep(100); // sleep .1 seconds
           } catch (InterruptedException e) {
-            System.err.println("Got interrupted waiting for server " + serverSocket + " to connect to new port at " + newPortForServer + ".  Will continue to wait.");
+            System.err.println("Got interrupted waiting for server " + serverSocket
+                               + " to connect to new port at " + newPortForServer
+                               + ".  Will continue to wait.");
             e.printStackTrace();
           }
         }
@@ -166,7 +172,8 @@ public class Relay {
   public static class ServerNewConnectionWaiter implements Runnable {
     ServerSocket newServerServerSocketForClient = null;
     ServerConnectionForClient connForClient = null;
-    public ServerNewConnectionWaiter(ServerSocket _newServerServerSocketForClient, ServerConnectionForClient _connForClient) {
+    public ServerNewConnectionWaiter(ServerSocket _newServerServerSocketForClient,
+                                     ServerConnectionForClient _connForClient) {
       newServerServerSocketForClient = _newServerServerSocketForClient;
       connForClient = _connForClient;
     }
@@ -174,7 +181,8 @@ public class Relay {
       try {
         // We'll wait here for the server to come back...
         connForClient.serverSocket = newServerServerSocketForClient.accept();
-        if (verbose > 1) System.out.println("server " + newServerServerSocketForClient + " connected back to relay on " + connForClient.serverSocket);
+        if (verbose > 1) System.out.println("server " + newServerServerSocketForClient
+                                            + " connected back to relay on " + connForClient.serverSocket);
         // ... and now that we've got that new port set, we can exit.
       } catch (IOException e) {
         throw new RuntimeException(e);
@@ -203,9 +211,11 @@ public class Relay {
         String messageIn = requestFromClient.readLine();
         while (messageIn != null) { // loop until the stream is closed
           requestToServer.println(messageIn);
-          if (verbose > 1) System.out.println("Starting message to server "+serverSocket+" from client "+newClientConnection+"...");
+          if (verbose > 1) System.out.println("Starting message to server "+serverSocket
+                                              +" from client "+newClientConnection+"...");
           String messageBack = responseFromServer.readLine();
-          if (verbose > 1) System.out.println("... got response from server "+serverSocket+", so responding to client "+newClientConnection+".");
+          if (verbose > 1) System.out.println("... got response from server "+serverSocket
+                                              +", so responding to client "+newClientConnection+".");
           responseToClient.println(messageBack);
           messageIn = requestFromClient.readLine();
         }

@@ -175,7 +175,7 @@ calls the sample RequestWaiter for each client connection you get:
         serverSocket = new ServerSocket(port);
         while(true) { // loop forever, spawning a thread for each new client
           clientSocket = serverSocket.accept();
-          new Thread(new ResponseHandler(clientSocket)).start();
+          new Thread(new ResponseHandler(clientSocket)).start(); // talk to client
         }
 
 
@@ -198,7 +198,7 @@ connect to each client as they contact your address at the relay.
           String clientHost = messageIn.substring(0, messageIn.indexOf(":"));
           int clientPort = Integer.valueOf(messageIn.substring(messageIn.indexOf(":") + 1));
           clientSocket = new Socket(clientHost, clientPort);
-          new Thread(new ResponseHandler(clientSocket)).start();
+          new Thread(new ResponseHandler(clientSocket)).start(); // talk to client
 
           // now wait for the next client HOST:PORT
           messageIn = incoming.readLine();
