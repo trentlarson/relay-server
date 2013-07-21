@@ -5,13 +5,14 @@ import java.util.*;
 
 public class Relay {
 
-  public static String DEFAULT_HOST = "localhost";
-  public static int DEFAULT_PORT = 8080;
+  public static final String DEFAULT_HOST = "localhost";
+  public static final int DEFAULT_PORT = 8080;
+
+  private static String host = DEFAULT_HOST;
+  private static int port = DEFAULT_PORT;
   private static int verbose = 0;
 
   public static void main(String[] args) {
-    String host = DEFAULT_HOST;
-    int port = DEFAULT_PORT;
     for (int i = 0; i < args.length; i++) {
       if (args[i].equals("-?")) {
         System.out.println("Usage:");
@@ -92,13 +93,13 @@ public class Relay {
         requestToServer.println(hostForRelay + ":" + clientPort);
 
         clientServerSocket = new ServerSocket(clientPort);
-        while (true) { // loop forever
+        while (true) { // loop forever, accepting clients
 
           Socket newClientConnection = clientServerSocket.accept();
             
           if (verbose > 0) System.out.println( "client connected: " + newClientConnection.getInetAddress() + ":" + newClientConnection.getPort());
             
-          new Thread(new PassThroughRequestWaiter(serverSocket, newClientConnection, requestToServer, responseFromServer)).start();
+          new Thread(new ClientPassThroughRequestWaiter(serverSocket, newClientConnection, requestToServer, responseFromServer)).start();
           
         }
       } catch (IOException e) {
@@ -112,21 +113,91 @@ public class Relay {
   }
     
 
-  public static class PassThroughRequestWaiter implements Runnable {
+  /**
+     Placeholder for the relay: when it starts a thread to wait for
+     the server to reconnect, this is what the server is waiting to
+     become non-null.
+   */
+  private static class ServerConnectionForClient {
+    public Socket serverSocket = null;
+  }
+
+  /**
+     For each client, we have to set up a separate socket for the
+     server to talk with that particular client.
+   */
+  public static class ClientPassThroughRequestWaiter implements Runnable {
     Socket serverSocket = null, newClientConnection = null;
     PrintWriter requestToServer = null;
     BufferedReader responseFromServer = null;
-    public PassThroughRequestWaiter(Socket _serverSocket, Socket _newClientConnection, PrintWriter _requestToServer, BufferedReader _responseFromServer) {
+    public ClientPassThroughRequestWaiter(Socket _serverSocket, Socket _newClientConnection, PrintWriter _requestToServer, BufferedReader _responseFromServer) {
       serverSocket = _serverSocket;
       newClientConnection = _newClientConnection;
       requestToServer = _requestToServer;
-      responseFromServer = _responseFromServer;
+    }
+    public void run() {
+      ServerSocket newServerServerSocketForClient = null;
+      try {
+        int newPortForServer = findNextOpenPortAbove(newClientConnection.getPort());
+        newServerServerSocketForClient = new ServerSocket(newPortForServer);
+        ServerConnectionForClient connForClient = new ServerConnectionForClient();
+        new Thread(new ServerNewConnectionWaiter(newServerServerSocketForClient, connForClient)).start();
+        requestToServer.println(host + ":" + newPortForServer); // tell server new port for linking to this client
+        // now hang out and wait until the ServerConnectionForClient is filled in
+        while (connForClient.serverSocket == null) {
+          try {
+            Thread.currentThread().sleep(100); // sleep .1 seconds
+          } catch (InterruptedException e) {
+            System.err.println("Got interrupted waiting for server " + serverSocket + " to connect to new port at " + newPortForServer + ".  Will continue to wait.");
+            e.printStackTrace();
+          }
+        }
+        // now that we've got the new connection for just this server & client, route
+        new Thread(new PassThroughRequestWaiter(connForClient.serverSocket, newClientConnection)).start();
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      } finally {
+        try { newServerServerSocketForClient.close(); } catch (IOException e) {}
+      }
+    }
+  }
+    
+
+  public static class ServerNewConnectionWaiter implements Runnable {
+    ServerSocket newServerServerSocketForClient = null;
+    ServerConnectionForClient connForClient = null;
+    public ServerNewConnectionWaiter(ServerSocket _newServerServerSocketForClient, ServerConnectionForClient _connForClient) {
+      newServerServerSocketForClient = _newServerServerSocketForClient;
+      connForClient = _connForClient;
+    }
+    public void run() {
+      try {
+        // We'll wait here for the server to come back...
+        connForClient.serverSocket = newServerServerSocketForClient.accept();
+        if (verbose > 1) System.out.println("server " + newServerServerSocketForClient + " connected back to relay on " + connForClient.serverSocket);
+        // ... and now that we've got that new port set, we can exit.
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+    }
+  }
+
+
+  public static class PassThroughRequestWaiter implements Runnable {
+    Socket serverSocket = null, newClientConnection = null;
+    public PassThroughRequestWaiter(Socket _serverSocket, Socket _newClientConnection) {
+      serverSocket = _serverSocket;
+      newClientConnection = _newClientConnection;
     }
     public void run() {
       BufferedReader requestFromClient = null;
+      PrintWriter requestToServer = null;
+      BufferedReader responseFromServer = null;
       PrintWriter responseToClient = null;
       try {
         requestFromClient = new BufferedReader(new InputStreamReader(newClientConnection.getInputStream()));
+        requestToServer = new PrintWriter(serverSocket.getOutputStream(), true);
+        responseFromServer = new BufferedReader(new InputStreamReader(serverSocket.getInputStream()));
         responseToClient = new PrintWriter(newClientConnection.getOutputStream(), true);
 
         String messageIn = requestFromClient.readLine();
@@ -143,8 +214,11 @@ public class Relay {
         throw new RuntimeException(e);
       } finally {
         try { requestFromClient.close(); } catch (Exception e) {}
+        try { requestToServer.close(); } catch (Exception e) {}
+        try { responseFromServer.close(); } catch (Exception e) {}
         try { responseToClient.close(); } catch (Exception e) {}
         try { newClientConnection.close(); } catch (Exception e) {}
+        try { serverSocket.close(); } catch (Exception e) {}
       }
 
     }

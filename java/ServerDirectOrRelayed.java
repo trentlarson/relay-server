@@ -10,6 +10,7 @@ public abstract class ServerDirectOrRelayed {
 
     ServerSocket serverSocket = null;
     Socket clientSocket = null;
+    Socket clientAddressSocket = null;
 
     try {
 
@@ -41,9 +42,9 @@ public abstract class ServerDirectOrRelayed {
         BufferedReader incoming = null;
         PrintWriter outgoing = null;
         try {
-          clientSocket = new Socket(host, port);
-          incoming = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-          outgoing = new PrintWriter(clientSocket.getOutputStream(), true);
+          clientAddressSocket = new Socket(host, port);
+          incoming = new BufferedReader(new InputStreamReader(clientAddressSocket.getInputStream()));
+          outgoing = new PrintWriter(clientAddressSocket.getOutputStream(), true);
           String publicHostAndPort = incoming.readLine();
           System.out.println(publicHostAndPort); // publish this to the world
         } catch (IOException e) {
@@ -51,7 +52,7 @@ public abstract class ServerDirectOrRelayed {
           try { outgoing.close(); } catch (Exception e2) {}
           throw new IOException("Unable to route through relay server.", e);
         }
-        new RequestWaiter(clientSocket, incoming, outgoing).run();
+        new RequestWaiter(clientAddressSocket, incoming, outgoing).run();
 
       }
 
@@ -64,19 +65,19 @@ public abstract class ServerDirectOrRelayed {
   }
 
   public class RequestWaiter implements Runnable {
-    private Socket clientSocket = null;
+    private Socket newClientAddressSocket = null;
     private BufferedReader incoming = null;
     private PrintWriter outgoing = null;
-    public RequestWaiter(Socket _clientSocket, BufferedReader _incoming, PrintWriter _outgoing) throws IOException {
-      clientSocket = _clientSocket;
+    public RequestWaiter(Socket _newClientAddressSocket, BufferedReader _incoming, PrintWriter _outgoing) throws IOException {
+      newClientAddressSocket = _newClientAddressSocket;
       incoming = _incoming;
       outgoing = _outgoing;
 
       if (incoming == null) {
-        incoming = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+        incoming = new BufferedReader(new InputStreamReader(newClientAddressSocket.getInputStream()));
       }
       if (outgoing == null) {
-        outgoing = new PrintWriter(clientSocket.getOutputStream(), true);
+        outgoing = new PrintWriter(newClientAddressSocket.getOutputStream(), true);
       }
     }
     /**
@@ -86,7 +87,12 @@ public abstract class ServerDirectOrRelayed {
       try {
         String messageIn = incoming.readLine();
         while (messageIn != null) { // loop until the stream is closed
-          new Thread(new ResponseHandler(outgoing, messageIn)).start();
+          // parse out the host and port where to connect for this new client
+          String clientHost = messageIn.substring(0, messageIn.indexOf(":"));
+          int clientPort = Integer.valueOf(messageIn.substring(messageIn.indexOf(":") + 1));
+          new Thread(new ResponseHandler(clientHost, clientPort)).start();
+
+          // now wait for the next client
           messageIn = incoming.readLine();
         }
       } catch (IOException e) {
@@ -99,17 +105,35 @@ public abstract class ServerDirectOrRelayed {
   }
 
   public class ResponseHandler implements Runnable {
-    private PrintWriter outgoing = null;
-    private String messageIn = null;
-    public ResponseHandler(PrintWriter _outgoing, String _messageIn) throws IOException {
-      outgoing = _outgoing;
-      messageIn = _messageIn;
+    private String clientHost = null;
+    private int clientPort = 0;
+    public ResponseHandler(String _clientHost, int _clientPort) throws IOException {
+      clientHost = _clientHost;
+      clientPort = _clientPort;
     }
     /**
        Send output when finished processing (which may take time).
      */
     public void run() {
-      outgoing.println(response(messageIn));
+      Socket clientConn = null;
+      BufferedReader incoming = null;
+      PrintWriter outgoing = null;
+      try {
+        clientConn = new Socket(clientHost, clientPort);
+        incoming = new BufferedReader(new InputStreamReader(clientConn.getInputStream()));
+        outgoing = new PrintWriter(clientConn.getOutputStream(), true);
+        String messageIn = incoming.readLine();
+        while (messageIn != null) {
+          outgoing.println(response(messageIn));
+          messageIn = incoming.readLine();
+        }
+      } catch (IOException e) {
+        throw new RuntimeException("Got an error communicating with a client.", e);
+      } finally {
+        try { outgoing.close(); } catch (Exception e) {}
+        try { incoming.close(); } catch (Exception e) {}
+        try { clientConn.close(); } catch (Exception e) {}
+      }
     }
   }
 
