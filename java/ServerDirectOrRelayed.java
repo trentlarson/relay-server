@@ -15,24 +15,20 @@ public abstract class ServerDirectOrRelayed {
     try {
 
       if (args.length < 1) {
-        System.out.println("Must supply a port, or a relay host & port.");
+        System.out.println("Must supply a port number for listening,"
+                           + " or a host and a port for the location of a relay server.");
+
       } else if (args.length < 2) {
 
         int port = Integer.valueOf(args[0]).intValue();
-        try {
-          serverSocket = new ServerSocket(port);
-        } catch (IOException e) {
-          throw new IOException("Unable to open " + port + " to start server.", e);
-        }
+
+        serverSocket = new ServerSocket(port);
 
         while(true) { // loop forever, spawning a thread for each new client
-          try {
-            clientSocket = serverSocket.accept();
-          } catch (IOException e) {
-            throw new IOException("Unable to listen for more server connections.", e);
-          }
+          clientSocket = serverSocket.accept();
           new Thread(new ResponseHandler(clientSocket)).start();
         }
+
 
       } else { // must have supplied a host & port for relay
         
@@ -40,14 +36,13 @@ public abstract class ServerDirectOrRelayed {
         int port = Integer.valueOf(args[1]).intValue();
 
         BufferedReader incoming = null;
-        PrintWriter outgoing = null;
         try {
           clientAddressSocket = new Socket(host, port);
+
+          // grab public address from the relay
           incoming = new BufferedReader(new InputStreamReader(clientAddressSocket.getInputStream()));
-          outgoing = new PrintWriter(clientAddressSocket.getOutputStream(), true);
           String publicHostAndPort = incoming.readLine();
-          // publish my new address to the world
-          System.out.println(publicHostAndPort);
+          System.out.println(publicHostAndPort); // this is the HOST:PORT to give clients
 
           // now listen on that socket for new connections to make for new clients
           String messageIn = incoming.readLine();
@@ -61,10 +56,8 @@ public abstract class ServerDirectOrRelayed {
             // now wait for the next client
             messageIn = incoming.readLine();
           }
-        } catch (IOException e) {
+        } finally {
           try { incoming.close(); } catch (Exception e2) {}
-          try { outgoing.close(); } catch (Exception e2) {}
-          throw new IOException("Unable to route through relay server.", e);
         }
 
       }

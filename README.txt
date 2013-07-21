@@ -75,30 +75,32 @@ This relay server is your public intermediary to the rest of the
 world, giving access to your own server that may be sitting behind a
 firewall.
 
-To run it, choose a public server (eg. in AWS) and make sure Java
-(1.6+) is installed.  We'll assume that server has the public address
-of 12345.amazonaws.com.  Unpack the relay server:
+To run it, make sure Java (1.6+) is installed.  Unpack the relay
+server:
 
 tar -xvf relay.tgz
 cd relay
 
 
 
-You can run it in basic mode using localhost and port 8080 by default:
+You can run it in basic mode using "localhost" and port 8080 by default:
 
 relay &
 
 
 
-... but it's best to customize the address you're using, and probably the port:
+But it's best to customize the address you're using, and probably the
+port.  Let's say your server is running at 1234.amazonaws.com on port
+8888:
 
-relay -h 12345.amazonaws.com 8888 &
+relay -h 1234.amazonaws.com 8888 &
 
 
 
-If you want to see all connections made to the server for debugging, use the -v option:
+If you want to see all connections made to the server for debugging,
+use the -v option (or -vv for even more info):
 
-relay -h 12345.amazonaws.com -v 8888 &
+relay -h 1234.amazonaws.com -v 8888 &
 
 
 
@@ -117,31 +119,44 @@ and retrieve it's own public address.  Here's how: your server
 currently listens for any incoming connections, so you'll modify it to
 do this instead:
 
-- Make a single connection to your relay server running at 1234.amazonaws.com:8888
+1) Make a single connection to your relay server,
 
-- accept one HOST:PORT line of input for your new public address,
+2) accept one HOST:PORT line of input for your new public address,
 
-- then sit and respond to that one client, and the relay server will route everyone to you.
+3) then wait for more HOST:PORT addresses to tell you where to connect
+  to each client as they make connection requests.
 
-It will manage the ports and forward each of your users' requests.
-All you have to do is advertise to everyone the HOST:PORT that the
-relay server sent back when you made the connection; using the
-previous settings, it'll probably choose the next port and return
-something like this:
+Let's go through the steps.  First, after you connect to the server,
+it will send back the host and port information, like this:
 
 1234.amazonaws.com:8889
 
-Now you can give that address to all your users and they'll be able to
-connect to your application from anywhere.
+That address is for you to share with the world.  Keep that socket
+open and listen on it; if someone comes in and connects to that
+address, you will get another HOST:PORT combination that tells you
+where to connect to that client.  For example, the next line might
+come to you as:
 
-Let's give a quick Java code example to demonstrate how you need to
-modify your server.  Assume you've got some class or method that runs
-your inner loops for one client, like so:
+1234.amazonaws.com:8895
 
-  public class RequestWaiter implements Runnable {
+That means that a client has made a connection to the relay, so you
+should connect to that address and receive the requests and give
+responses through it.
+
+
+
+Let's give a quick Java code example to demonstrate how you would need
+to modify an existing server to work with this relay.  Assume you've
+got some class or method that runs your inner loops for one client,
+like so:
+
+  public class ResponseHandler implements Runnable {
     ...
     public void run() {
       ...
+        incoming = new BufferedReader(new InputStreamReader(clientConn.getInputStream()));
+        outgoing = new PrintWriter(clientConn.getOutputStream(), true);
+
         String messageIn = incoming.readLine();
         while (messageIn != null) { // loop until the stream is closed
           outgoing.println(response(messageIn));
@@ -154,23 +169,40 @@ your inner loops for one client, like so:
 
 
 You've also got an outer loop that accepts client connections;
-probably something like this, which calls the sample RequestWaiter for
-each client connection you get:
+probably something like this, which reads from a ServerSocket and then
+calls the sample RequestWaiter for each client connection you get:
 
         serverSocket = new ServerSocket(port);
         while(true) { // loop forever, spawning a thread for each new client
           clientSocket = serverSocket.accept();
-          new Thread(new RequestWaiter(clientSocket)).start();
+          new Thread(new ResponseHandler(clientSocket)).start();
         }
 
 
-Here's the change: instead of listening for all your clients, just
-make one connection to our relay, get the public HOST:PORT, and then
-treat that like your only client:
+Here's the change: instead of listening for all your clients as a
+server, make one connection to our relay, get the public HOST:PORT
+which you can advertize, and then listen for the address where you can
+connect to each client as they contact your address at the relay.
 
-        clientSocket = new Socket("1234.amazonaws.com", 8888); // for the relay server
-        incoming = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-        publicHostAndPort = incoming.readLine(); // publish this to the world: it redirects to you
-        new RequestWaiter(clientSocket).run();
+        clientAddressSocket = new Socket("1234.amazonaws.com", 8888); // for the relay server
 
-Now give everyone the HOST:PORT that you got back on that third line... and you're ready for the world.
+        // grab public address from the relay
+        incoming = new BufferedReader(new InputStreamReader(clientAddressSocket.getInputStream()));
+        String publicHostAndPort = incoming.readLine();
+        System.out.println(publicHostAndPort); // this is the HOST:PORT to give clients
+
+        // now listen on that socket for new connections to make for new clients
+        String messageIn = incoming.readLine();
+        while (messageIn != null) { // loop until closed, spawning a thread for each new client
+          // parse out the host and port where to connect for this new client
+          String clientHost = messageIn.substring(0, messageIn.indexOf(":"));
+          int clientPort = Integer.valueOf(messageIn.substring(messageIn.indexOf(":") + 1));
+          clientSocket = new Socket(clientHost, clientPort);
+          new Thread(new ResponseHandler(clientSocket)).start();
+
+          // now wait for the next client HOST:PORT
+          messageIn = incoming.readLine();
+        }
+
+
+Now give everyone the HOST:PORT that you got back (in "publicHostAndPort") and you're ready for the world.
