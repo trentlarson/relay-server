@@ -7,11 +7,11 @@ public class Relay {
 
   public static String DEFAULT_HOST = "localhost";
   public static int DEFAULT_PORT = 8080;
+  private static int verbose = 0;
 
   public static void main(String[] args) {
     String host = DEFAULT_HOST;
     int port = DEFAULT_PORT;
-    boolean verbose = false;
     for (int i = 0; i < args.length; i++) {
       if (args[i].equals("-?")) {
         System.out.println("Usage:");
@@ -20,13 +20,16 @@ public class Relay {
         System.out.println("");
         System.out.println(" -h HOST is the address of the host to advertise (default is localhost)");
         System.out.println(" -v      log verbose messages");
+        System.out.println(" -vv     log very verbose messages");
         System.out.println(" PORT    is the port on which the relay listens for servers (default is 8080)");
         System.exit(0);
       } else if (args[i].equals("-h")) {
         i++;
         host = args[i];
       } else if (args[i].equals("-v")) {
-        verbose = true;
+        verbose = 1;
+      } else if (args[i].equals("-vv")) {
+        verbose = 2;
       } else { // assume it's our number argument
         port = Integer.valueOf(args[i]).intValue();
       }
@@ -51,10 +54,10 @@ public class Relay {
           throw new IOException("Unable to listen for more server connections.", e);
         }
 
-        if (verbose) System.out.println( "server connected: " + newServerConnection.getInetAddress() + ":" + newServerConnection.getPort());
+        if (verbose > 0) System.out.println( "server connected: " + newServerConnection.getInetAddress() + ":" + newServerConnection.getPort());
             
         int portForServer = findNextOpenPortAbove(port);
-        PassThroughServerSocket ptss = new PassThroughServerSocket(newServerConnection, host, portForServer, verbose);
+        PassThroughServerSocket ptss = new PassThroughServerSocket(newServerConnection, host, portForServer);
         new Thread(ptss).start();
       }
 
@@ -72,12 +75,10 @@ public class Relay {
     private Socket serverSocket;
     private String hostForRelay;
     private int clientPort;
-    private boolean verbose;
-    public PassThroughServerSocket(Socket _serverSocket, String _hostForRelay, int _clientPort, boolean _verbose) {
+    public PassThroughServerSocket(Socket _serverSocket, String _hostForRelay, int _clientPort) {
       serverSocket = _serverSocket;
       hostForRelay = _hostForRelay;
       clientPort = _clientPort;
-      verbose = _verbose;
     }
     public void run() {
       ServerSocket clientServerSocket = null;
@@ -95,7 +96,7 @@ public class Relay {
 
           Socket newClientConnection = clientServerSocket.accept();
             
-          if (verbose) System.out.println( "client connected: " + newClientConnection.getInetAddress() + ":" + newClientConnection.getPort());
+          if (verbose > 0) System.out.println( "client connected: " + newClientConnection.getInetAddress() + ":" + newClientConnection.getPort());
             
           new Thread(new PassThroughRequestWaiter(serverSocket, newClientConnection, requestToServer, responseFromServer)).start();
           
@@ -131,7 +132,9 @@ public class Relay {
         String messageIn = requestFromClient.readLine();
         while (messageIn != null) { // loop until the stream is closed
           requestToServer.println(messageIn);
+          if (verbose > 1) System.out.println("Starting message to server "+serverSocket+" from client "+newClientConnection+"...");
           String messageBack = responseFromServer.readLine();
+          if (verbose > 1) System.out.println("... got response from server "+serverSocket+", so responding to client "+newClientConnection+".");
           responseToClient.println(messageBack);
           messageIn = requestFromClient.readLine();
         }
