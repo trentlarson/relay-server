@@ -86,7 +86,7 @@ public abstract class ServerDirectOrRelayed {
       try {
         String messageIn = incoming.readLine();
         while (messageIn != null) { // loop until the stream is closed
-          outgoing.println(response(messageIn));
+          new Thread(new ResponseHandler(outgoing, messageIn)).start();
           messageIn = incoming.readLine();
         }
       } catch (IOException e) {
@@ -96,6 +96,21 @@ public abstract class ServerDirectOrRelayed {
         try { outgoing.close(); } catch (Exception e) {}
       }
     }    
+  }
+
+  public class ResponseHandler implements Runnable {
+    private PrintWriter outgoing = null;
+    private String messageIn = null;
+    public ResponseHandler(PrintWriter _outgoing, String _messageIn) throws IOException {
+      outgoing = _outgoing;
+      messageIn = _messageIn;
+    }
+    /**
+       Send output when finished processing (which may take time).
+     */
+    public void run() {
+      outgoing.println(response(messageIn));
+    }
   }
 
 }
