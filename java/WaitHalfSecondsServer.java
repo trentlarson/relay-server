@@ -29,7 +29,8 @@ public class WaitHalfSecondsServer extends ServerDirectOrRelayed {
   }
 
   public static void main(String[] args) {
-    new WaitHalfSecondsServer(Integer.valueOf(args[2])).runServer(args);
+    new WaitHalfSecondsServer(Integer.valueOf(args[args.length - 1]))
+      .runServer(Arrays.copyOf(args, args.length - 1));
   }
 
 }
