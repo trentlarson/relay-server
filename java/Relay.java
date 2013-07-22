@@ -3,6 +3,11 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 
+/**
+ * Relay server, which creates public connections for servers and clients behind firewalls.
+ *
+ * Run with "-?" argument to see usage.
+ */
 public class Relay {
 
   public static final String DEFAULT_HOST = "localhost";
@@ -41,30 +46,18 @@ public class Relay {
     Socket newServerConnection = null;
 
     try {
-
-      try {
-        newServerServerSocket = new ServerSocket(port);
-      } catch (IOException e) {
-        throw new IOException("Unable to open " + port + " to start relay.", e);
-      }
-
+      newServerServerSocket = new ServerSocket(port);
       while (true) { // loop forever, accepting new servers
-        try {
-          newServerConnection = newServerServerSocket.accept();
-        } catch (IOException e) {
-          throw new IOException("Unable to listen for more server connections.", e);
-        }
-
+        newServerConnection = newServerServerSocket.accept();
         if (verbose > 0) System.out.println( "server connected: " + newServerConnection.getInetAddress()
                                              + ":" + newServerConnection.getPort());
-            
         int portForServer = findNextOpenPortAbove(port);
         PassThroughServerSocket ptss = new PassThroughServerSocket(newServerConnection, host, portForServer);
         new Thread(ptss).start();
       }
 
     } catch (IOException e) {
-      throw new RuntimeException(e);
+      throw new RuntimeException("Got error listening for servers, so shutting down relay.", e);
     } finally {
       try { newServerConnection.close(); } catch (Exception e) {}
       try { newServerServerSocket.close(); } catch (Exception e) {}
@@ -73,6 +66,9 @@ public class Relay {
   }
     
 
+  /**
+   * Use the given public host and port for communications to the server connected by this socket.
+   */
   public static class PassThroughServerSocket implements Runnable {
     private Socket serverSocket;
     private String hostForRelay;
@@ -106,7 +102,7 @@ public class Relay {
           
         }
       } catch (IOException e) {
-        throw new RuntimeException(e);
+        throw new RuntimeException("Got error listening for clients, so won't listen any more.", e);
       } finally {
         try { responseFromServer.close(); } catch (Exception e) {}
         try { requestToServer.close(); } catch (Exception e) {}
@@ -115,15 +111,6 @@ public class Relay {
     }
   }
     
-
-  /**
-     Placeholder for the relay: when it starts a thread to wait for
-     the server to reconnect, this is what the server is waiting to
-     become non-null.
-   */
-  private static class ServerConnectionForClient {
-    public Socket serverSocket = null;
-  }
 
   /**
      For each client, we have to set up a separate socket for the
@@ -161,14 +148,26 @@ public class Relay {
         // now that we've got the new connection for just this server & client, route
         new Thread(new PassThroughRequestWaiter(connForClient.serverSocket, newClientConnection)).start();
       } catch (IOException e) {
-        throw new RuntimeException(e);
+        throw new RuntimeException("Got error trying to connect server for client,"
+                                   + " so won't serve clients to this this server any more.", e);
       } finally {
         try { newServerServerSocketForClient.close(); } catch (IOException e) {}
       }
     }
   }
     
+  /**
+     Placeholder for the relay: when it starts a thread to wait for
+     the server to reconnect, this is what the server is waiting to
+     become non-null.
+   */
+  private static class ServerConnectionForClient {
+    public Socket serverSocket = null;
+  }
 
+  /**
+   * Listen on this server socket for the server to reconnect to handle the new client.
+   */
   public static class ServerNewConnectionWaiter implements Runnable {
     ServerSocket newServerServerSocketForClient = null;
     ServerConnectionForClient connForClient = null;
@@ -185,12 +184,16 @@ public class Relay {
                                             + " connected back to relay on " + connForClient.serverSocket);
         // ... and now that we've got that new port set, we can exit.
       } catch (IOException e) {
-        throw new RuntimeException(e);
+        throw new RuntimeException("Got error trying to connect to this server,"
+                                   +" so won't try any more for this client.", e);
       }
     }
   }
 
 
+  /**
+   * Pass messages back-and-forth between the server and the client.
+   */
   public static class PassThroughRequestWaiter implements Runnable {
     Socket serverSocket = null, newClientConnection = null;
     public PassThroughRequestWaiter(Socket _serverSocket, Socket _newClientConnection) {
@@ -221,7 +224,7 @@ public class Relay {
         }
 
       } catch (IOException e) {
-        throw new RuntimeException(e);
+        throw new RuntimeException("Got error routin client & server request, so giving up.", e);
       } finally {
         try { requestFromClient.close(); } catch (Exception e) {}
         try { requestToServer.close(); } catch (Exception e) {}
@@ -235,6 +238,9 @@ public class Relay {
   }
 
 
+  /**
+   * Look for an open port, starting with port+1.
+   */
   public static int findNextOpenPortAbove(int port) throws IOException {
     boolean foundPort = false;
     int nextTrialPort = port;

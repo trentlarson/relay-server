@@ -2,6 +2,13 @@
 import java.io.*;
 import java.net.*;
 
+/**
+ * Server which can run as its own server or through a Relay server.
+ *
+ * Usage: extend the class, implement the response method, then create
+ * a 'main' method for the new class that instantiates itself and
+ * calls 'runServer'.
+ */
 public abstract class ServerDirectOrRelayed {
   
   public abstract String response(String request);
@@ -67,12 +74,15 @@ public abstract class ServerDirectOrRelayed {
       }
 
     } catch (IOException e) {
-      throw new RuntimeException(e);
+      throw new RuntimeException("Got error running the server, so it's aborting.", e);
     } finally {
       try { clientSocket.close(); } catch (Exception e) {}
     }
   }
 
+  /**
+   * Thread with a client connection to loop and respond to data.
+   */
   public class ResponseHandler implements Runnable {
     private Socket clientConn = null;
     public ResponseHandler(Socket _clientConn) throws IOException {
@@ -93,7 +103,7 @@ public abstract class ServerDirectOrRelayed {
           messageIn = incoming.readLine();
         }
       } catch (IOException e) {
-        throw new RuntimeException("Got an error communicating with a client.", e);
+        throw new RuntimeException("Got an error communicating with a client, so we're aborting it.", e);
       } finally {
         try { outgoing.close(); } catch (Exception e) {}
         try { incoming.close(); } catch (Exception e) {}

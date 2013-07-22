@@ -67,6 +67,22 @@ I don't have to write signals back-and-forth for when, say, the relay shuts down
 I can ignore problems of too much data on one newline, too many servers, too many clients, connections being open for too long, or disconnects (since you said we won't "initiate" any connections)... essentially, all those pesky high-traffic concerns.
 
 
+More Assumptions
+
+The request & response terminators can be CR or LF or CR-LF.
+
+The protocol is always one request from the client which results in
+one response from the server.
+
+Corollary: if a server isn't finished with a request yet, subsequent
+requests by same client will queue (so other clients may get served
+first).
+
+
+... and Design Choices
+
+Connecting to a new server port for each client to talk with their server.
+
 
 ________________________________________________________________________________
 Explanation of Relay Server
