@@ -102,6 +102,8 @@ class RouteThroughRelay(threading.Thread):
 #            shutdownAllSockets()
 
 
+print "To shutdown, connect to any public port and enter: shutdown relay"
+
 # For each server, get a connection to the relay.
 for idx, serverHostAndPort in enumerate(SERVERS):
     relaySock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
