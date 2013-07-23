@@ -72,16 +72,12 @@ More Assumptions
 The request & response terminators can be CR or LF or CR-LF.
 
 The protocol is always one request from the client which results in
-one response from the server.
-
-Corollary: if a server isn't finished with a request yet, subsequent
-requests by same client will queue (so other clients may get served
-first).
+one response from the server.  So if a server isn't finished with a
+request yet, subsequent requests by same client will queue (so other
+clients may get served first).
 
 
-... and Design Choices
 
-Connecting to a new server port for each client to talk with their server.
 
 
 ________________________________________________________________________________
@@ -222,3 +218,12 @@ connect to each client as they contact your address at the relay.
 
 
 Now give everyone the HOST:PORT that you got back (in "publicHostAndPort") and you're ready for the world.
+
+
+
+________________________________________________________________________________
+Commentary
+
+You asked for some feedback, but the problem is actually pretty well
+specified.  In my case, I just focused on the part of the problem with
+the routing

@@ -50,8 +50,8 @@ public class Relay {
       int portForServer = port;
       while (true) { // loop forever, accepting new servers
         newServerConnection = newServerServerSocket.accept();
-        if (verbose > 0) System.out.println( "server connected: " + newServerConnection.getInetAddress()
-                                             + ":" + newServerConnection.getPort());
+        if (verbose > 0) System.out.println("server connected: " + newServerConnection.getInetAddress()
+                                            + ":" + newServerConnection.getPort());
         portForServer = findNextOpenPortAbove(portForServer);
         PassThroughServerSocket ptss = new PassThroughServerSocket(newServerConnection, host, portForServer);
         new Thread(ptss).start();
@@ -95,9 +95,12 @@ public class Relay {
 
           Socket newClientConnection = clientServerSocket.accept();
             
-          if (verbose > 0) System.out.println( "client connected: " + newClientConnection.getInetAddress()
-                                               + ":" + newClientConnection.getPort());
-            
+          if (verbose > 0) {
+            System.out.println("client connected: " + newClientConnection.getInetAddress()
+                               + ":" + newClientConnection.getPort() + " to " + clientPort
+                               + " for server at "
+                               + serverSocket.getInetAddress() + ":" + serverSocket.getPort());
+          }
           new Thread(new ClientPassThroughRequestWaiter(serverSocket, newClientConnection,
                                                         requestToServer, responseFromServer)).start();
           

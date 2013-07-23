@@ -87,7 +87,7 @@ class ThreadedServerThroughRelay(threading.Thread):
         self.relayIp = ip
         self.relayPort = port
         self.responder = responder
-        self.publicHostAndPortTuple = ('localhost', 8888)
+        self.publicHostAndPortTuple = ('localhost', 8888) # just dummy defaults
         self.sock = None # for later, so our main method can shutdown when finished
 
     def run(self):
