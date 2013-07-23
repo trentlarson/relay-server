@@ -47,11 +47,12 @@ public class Relay {
 
     try {
       newServerServerSocket = new ServerSocket(port);
+      int portForServer = port;
       while (true) { // loop forever, accepting new servers
         newServerConnection = newServerServerSocket.accept();
         if (verbose > 0) System.out.println( "server connected: " + newServerConnection.getInetAddress()
                                              + ":" + newServerConnection.getPort());
-        int portForServer = findNextOpenPortAbove(port);
+        portForServer = findNextOpenPortAbove(portForServer);
         PassThroughServerSocket ptss = new PassThroughServerSocket(newServerConnection, host, portForServer);
         new Thread(ptss).start();
       }
