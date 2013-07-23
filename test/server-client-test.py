@@ -52,41 +52,50 @@ if __name__ == "__main__":
         # BEWARE: an empty line will basically kill the server.
         # (The fix is to do something different in the socket reads, instead of (data != '') everywhere.)
 
-        relayed = ThreadedServerThroughRelay(sys.argv[1], int(sys.argv[2]), SleepTimeHandlerRelay(2))
-        relayed2 = ThreadedServerThroughRelay(sys.argv[1], int(sys.argv[2]), EchoHandlerRelay())
-        relayed3 = ThreadedServerThroughRelay(sys.argv[1], int(sys.argv[2]), EchoHandlerRelay())
-        relayed4 = ThreadedServerThroughRelay(sys.argv[1], int(sys.argv[2]), SleepTimeHandlerRelay(3))
-
-        '''
-        # These are configured to test my old relay
-        relayed = ThreadedServerThroughOldRelay(sys.argv[1], int(sys.argv[2]), SleepTimeHandlerRelay(2))
-        relayed2 = ThreadedServerThroughOldRelay(sys.argv[1], int(sys.argv[2]), EchoHandlerRelay())
-        relayed3 = ThreadedServerThroughOldRelay(sys.argv[1], int(sys.argv[2]), EchoHandlerRelay())
+        ''' # for your own servers
+        host1, port1 = ('localhost', 8083)
+        host2, port2 = ('localhost', 8084)
+        host3, port3 = ('localhost', 8084)
+        host4, port4 = ('localhost', 8084)
         '''
 
-        relayed4.start()
-        time.sleep(1) # let it start up
-        host, port = relayed4.publicHostAndPortTuple
-        ThreadedNewlineClient(host, port, "- Up to 4, every 3: \n1\n2\n3\n4\n5").start()
-        
-
-        relayed.start()
-        time.sleep(1) # let it start up
-        host, port = relayed.publicHostAndPortTuple
-        ThreadedNewlineClient(host, port, "Data, pause...\n... more, pause...\n... done.").start()
-
-
+        '''
+        '''
+        # (Note that 'shutdown' should be called on these down below.)
+        echoServer = EchoHandlerRelay()
+        sleepHandler2 = SleepTimeHandlerRelay(2)
+        relayed1 = ThreadedServerThroughRelay(sys.argv[1], int(sys.argv[2]), sleepHandler2)
+        relayed1.start()
+        relayed2 = ThreadedServerThroughRelay(sys.argv[1], int(sys.argv[2]), sleepHandler2)
         relayed2.start()
-        time.sleep(1) # let it start up
-        host, port = relayed2.publicHostAndPortTuple
-        ThreadedNewlineClient(host, port, "This should \n happen before \n the other.").start()
-
-
+        relayed3 = ThreadedServerThroughRelay(sys.argv[1], int(sys.argv[2]), echoServer)
         relayed3.start()
+        relayed4 = ThreadedServerThroughRelay(sys.argv[1], int(sys.argv[2]), echoServer)
+        relayed4.start()
+        time.sleep(1) # gotta give them time to initialize, eg. with their public address
+        host1, port1 = relayed1.publicHostAndPortTuple
+        host2, port2 = relayed2.publicHostAndPortTuple
+        host3, port3 = relayed3.publicHostAndPortTuple
+        host4, port4 = relayed4.publicHostAndPortTuple
+
+
+
         time.sleep(1) # let it start up
-        host, port = relayed3.publicHostAndPortTuple
+        ThreadedNewlineClient(host1, port1, "1\n2\n3\n4\n5").start()
+        time.sleep(3)
+
+
+        time.sleep(1) # let it start up
+        ThreadedNewlineClient(host2, port2, "Data, pause...\n... more, pause...\n... done.").start()
+
+
+        time.sleep(1) # let it start up
+        ThreadedNewlineClient(host3, port3, "This should \n happen before \n the other.").start()
+
+
+        time.sleep(1) # let it start up
         time.sleep(2) # let's wait until some of the sleep stuff is printed
-        ThreadedNewlineClient(host, port, "This should \n be interleaved.").start()
+        ThreadedNewlineClient(host4, port4, "This should \n be interleaved.").start()
         
 
 
@@ -96,11 +105,11 @@ if __name__ == "__main__":
 
 
         time.sleep(5)
-        relayed.sock.shutdown(socket.SHUT_RDWR) # .close() doesn't do it
+
+        relayed1.sock.shutdown(socket.SHUT_RDWR) # .close() doesn't do it
         relayed2.sock.shutdown(socket.SHUT_RDWR) # .close() doesn't do it
         relayed3.sock.shutdown(socket.SHUT_RDWR) # .close() doesn't do it
         relayed4.sock.shutdown(socket.SHUT_RDWR) # .close() doesn't do it
-
 
 
 

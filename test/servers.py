@@ -136,9 +136,9 @@ def echo(message):
 def threadNameAndEcho(message):
     return "{}: {}".format(threading.current_thread().name, message)
 
-def sleepAndEcho(seconds, message):
+def sleepAndEcho(seconds, message, messageNum):
     time.sleep(seconds)
-    return message
+    return message + " (at {}*{}={} seconds)".format(messageNum, seconds, messageNum*seconds)
 
 #
 # handler that returns message
@@ -160,5 +160,7 @@ class ThreadNameAndEchoHandlerRelay():
 class SleepTimeHandlerRelay():
     def __init__(self, seconds):
         self.seconds = seconds
+        self.messageNum = 0
     def response(self, message):
-        return sleepAndEcho(self.seconds, message)
+        self.messageNum = self.messageNum + 1
+        return sleepAndEcho(self.seconds, message, self.messageNum)
