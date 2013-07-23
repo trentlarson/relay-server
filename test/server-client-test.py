@@ -44,22 +44,18 @@ class ThreadedNewlineClient(threading.Thread):
 
 
 def runTestClients4(hostPorts):
-    time.sleep(1) # let it start up
     ThreadedNewlineClient(hostPorts[0][0], hostPorts[0][1], "1\n2\n3\n4\n5").start()
     time.sleep(3)
 
 
-    time.sleep(1) # let it start up
     ThreadedNewlineClient(hostPorts[1][0], hostPorts[1][1],
                           "Data, pause...\n... more, pause...\n... done.").start()
 
 
-    time.sleep(1) # let it start up
     ThreadedNewlineClient(hostPorts[2][0], hostPorts[2][1],
                           "This should \n happen before \n the other.").start()
     
 
-    time.sleep(1) # let it start up
     time.sleep(2) # let's wait until some of the sleep stuff is printed
     ThreadedNewlineClient(hostPorts[3][0], hostPorts[3][1],
                           "This should \n be interleaved.").start()
@@ -69,12 +65,17 @@ def runTestClients4(hostPorts):
 
 
 
+def runTestTwo10SecondClients(hostPorts):
+    print "This should only take 10 seconds."
+    ThreadedNewlineClient(hostPorts[0][0], hostPorts[0][1], "3\n3\n3\n1").start()
+    ThreadedNewlineClient(hostPorts[1][0], hostPorts[1][1], "1\n1\n4\n4").start()
 
 
 
 
 
 if __name__ == "__main__":
+
 
     HIT_EXISTING_SERVERS = False;
     RELAY_HOST = None
@@ -88,6 +89,11 @@ if __name__ == "__main__":
             RELAY_HOST = sys.argv[i+1]
             RELAY_PORT = int(sys.argv[i+2])
             i = i + 3
+        elif (sys.argv[i] == "-?"):
+            print "Usage: "
+            print "   -e             hit some existing servers, configured in the script"
+            print "   -r HOST PORT   connect to relay server at HOST:PORT"
+            exit(0)
         else:
             print "Got unknown option:", sys.argv[i]
             i = i + 1
@@ -98,18 +104,19 @@ if __name__ == "__main__":
         # (The fix is to do something different in the socket reads, instead of (data != '') everywhere.)
 
         # rely on servers that are running
-        hostPort1 = ('localhost', 8100)
+        hostPort1 = ('localhost', 8088)
         hostPort2 = ('localhost', 8099)
         hostPort3 = ('localhost', 8099)
         hostPort4 = ('localhost', 8098)
 
-        runTestClients4([hostPort1, hostPort2, hostPort3, hostPort4])
+        #runTestClients4([hostPort1, hostPort2, hostPort3, hostPort4])
+        runTestTwo10SecondClients([hostPort1, hostPort1])
         
 
 
     else:
         if (RELAY_HOST != None):
-            # We'll be starting our own servers
+            # We'll start our own servers
         
             echoServer = EchoHandlerRelay()
             sleepHandler2 = SleepTimeHandlerRelay(2)
@@ -140,7 +147,7 @@ if __name__ == "__main__":
 
 
         else:
-            print "Running only with servers and clients in this process; not connecting to existing servers."
+            print "Starting our own servers for this test."
 
             # Port 0 means to select an arbitrary unused port
             HOST, PORT = "localhost", 0
