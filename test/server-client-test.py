@@ -8,7 +8,7 @@ import time
 import SocketServer
 
 
-# This is our line-oriented buffer receive method (one character at a time)
+# Read from the sockets, looking for "\n" (one character at a time).
 def read_line(s):
     ret = ''
     while True:
@@ -55,33 +55,34 @@ if __name__ == "__main__":
         relayed = ThreadedServerThroughRelay(sys.argv[1], int(sys.argv[2]), SleepTimeHandlerRelay(2))
         relayed2 = ThreadedServerThroughRelay(sys.argv[1], int(sys.argv[2]), EchoHandlerRelay())
         relayed3 = ThreadedServerThroughRelay(sys.argv[1], int(sys.argv[2]), EchoHandlerRelay())
-
+        relayed4 = ThreadedServerThroughRelay(sys.argv[1], int(sys.argv[2]), SleepTimeHandlerRelay(3))
 
         '''
+        # These are configured to test my old relay
         relayed = ThreadedServerThroughOldRelay(sys.argv[1], int(sys.argv[2]), SleepTimeHandlerRelay(2))
         relayed2 = ThreadedServerThroughOldRelay(sys.argv[1], int(sys.argv[2]), EchoHandlerRelay())
         relayed3 = ThreadedServerThroughOldRelay(sys.argv[1], int(sys.argv[2]), EchoHandlerRelay())
         '''
 
-        relayed.start()
+        relayed4.start()
+        time.sleep(1) # let it start up
+        host, port = relayed4.publicHostAndPortTuple
+        ThreadedNewlineClient(host, port, "- Up to 4, every 3: \n1\n2\n3\n4\n5").start()
         
+
+        relayed.start()
         time.sleep(1) # let it start up
         host, port = relayed.publicHostAndPortTuple
-        ThreadedNewlineClient(host, port, "Data, pause...\n... more, pause...\ndone.").start()
-        
+        ThreadedNewlineClient(host, port, "Data, pause...\n... more, pause...\n... done.").start()
 
 
         relayed2.start()
-        
         time.sleep(1) # let it start up
         host, port = relayed2.publicHostAndPortTuple
         ThreadedNewlineClient(host, port, "This should \n happen before \n the other.").start()
-        
-
 
 
         relayed3.start()
-        
         time.sleep(1) # let it start up
         host, port = relayed3.publicHostAndPortTuple
         time.sleep(2) # let's wait until some of the sleep stuff is printed
@@ -91,10 +92,14 @@ if __name__ == "__main__":
 
 
 
+
+
+
         time.sleep(5)
         relayed.sock.shutdown(socket.SHUT_RDWR) # .close() doesn't do it
         relayed2.sock.shutdown(socket.SHUT_RDWR) # .close() doesn't do it
         relayed3.sock.shutdown(socket.SHUT_RDWR) # .close() doesn't do it
+        relayed4.sock.shutdown(socket.SHUT_RDWR) # .close() doesn't do it
 
 
 
