@@ -7,7 +7,7 @@ RELAY_SERVER = ('localhost', 8082)
 SERVERS = [
     ('localhost', 8111)
     ,('localhost', 8112)
-    #,('localhost', 8116)
+    ,('localhost', 8113)
     ]
 
 VERBOSE = 1
@@ -55,7 +55,7 @@ class CopyFromSockToSock(threading.Thread):
         try:
             request = readLine(self.clientSock)
             while (request != ''):
-               if (request == 'shutdown'):
+               if (request == 'shutdown relay'):
                    shutdownAllSockets()
                else:
                     self.serverSock.sendall(request + "\n")
@@ -78,38 +78,29 @@ class RouteThroughRelay(threading.Thread):
         # This is the part of the program where you'll want to customize behavior for this server.
 
         try:
-            print "listening on {}".format(self.relaySock.getsockname())
             newClientHostPortStr = readLine(self.relaySock)
             while (newClientHostPortStr != ''):
-                print "what?"
                 if (VERBOSE):
                     print "New client now available at {} going to {}".format(newClientHostPortStr,
                                                                               self.serverHostAndPort)
                 newClientHostAndPort = hostAndPortTuple(newClientHostPortStr)
-                print "what 1?"
             
                 clientRelaySock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 clientRelaySock.connect(newClientHostAndPort)
                 socketsToShutdown.append(clientRelaySock)
-                print "what 2?"
             
                 serverSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 serverSock.connect(self.serverHostAndPort)
                 socketsToShutdown.append(serverSock)
-                print "what 3?"
             
                 CopyFromSockToSock(clientRelaySock, serverSock).start()
 
-                print "listening again on {}".format(self.relaySock.getsockname())
                 newClientHostPortStr = readLine(self.relaySock)
-                print "what 5? ", newClientHostPortStr
 
         finally:
             pass
 #            shutdownAllSockets()
 
-'''
-'''
 
 # For each server, get a connection to the relay.
 for idx, serverHostAndPort in enumerate(SERVERS):
@@ -118,6 +109,7 @@ for idx, serverHostAndPort in enumerate(SERVERS):
     # get the HOST:PORT for this server's public address
     publicHostAndPort = hostAndPortTuple(readLine(relaySock))
     # let's show the public address for this server
-    print "server {}={} is at {}".format(idx, serverHostAndPort, publicHostAndPort)
+    if (VERBOSE):
+        print "server {}={} is public at {}".format(idx, serverHostAndPort, publicHostAndPort)
     RouteThroughRelay(publicHostAndPort, relaySock, serverHostAndPort).start()
     
