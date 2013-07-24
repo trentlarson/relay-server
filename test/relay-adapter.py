@@ -1,10 +1,12 @@
 
-# Set these values for your relay and servers.
+# Set these values for your relay and servers.  (Really gotta make these command-line args.)
 
-RELAY_SERVER = ('localhost', 8082)
+
+#RELAY_SERVER = (8082,)              # use this format to run as a proxy for the first server
+RELAY_SERVER = ('localhost', 8082) # use this format to connect to a relay server
 
 SERVERS = [
-    ('localhost', 8088)
+    ('localhost', 8113)
     ,('localhost', 8089)
     #,('localhost', 8113)
     ]
@@ -17,6 +19,8 @@ VERBOSE = 1
 
 import socket
 import threading
+import time
+import SocketServer
 
 SHUTDOWN_COMMAND = "shutdown adapter"
 
@@ -40,6 +44,8 @@ def hostAndPortTuple(hostAndPort):
     hostPortList = hostAndPort.split(":")
     return (hostPortList[0], int(hostPortList[1]))
 
+
+# ugly and often gets errors, but it allows us to kill it (or get into a state where Ctrl-C works)
 socketsToShutdown = []
 def shutdownAllSockets():
     print "Shutting it all down."
@@ -49,6 +55,38 @@ def shutdownAllSockets():
         finally:
             pass # don't care about errors; just want to close them all
     exit(0)
+
+
+
+
+
+
+#
+# base handler for line-oriented server request/response
+#
+class NewlineProxyHandler(SocketServer.BaseRequestHandler):
+    def handle(self):
+        serverSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        serverSock.connect(SERVERS[0])
+        socketsToShutdown.append(serverSock)
+
+        data = readLine(self.request)
+        while (data != ''):
+            if (data == SHUTDOWN_COMMAND):
+                shutdownAllSockets()
+            else:
+                serverSock.sendall(data + "\n")
+                response = readLine(serverSock)
+                self.request.sendall(response + "\n")
+                data = readLine(self.request)
+
+class ThreadedTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
+    pass
+
+
+
+
+
 
 
 class CopyFromSockToSock(threading.Thread):
@@ -75,7 +113,9 @@ class CopyFromSockToSock(threading.Thread):
 
 
 
-
+#
+# This protocol fits my relay server.
+#
 class RouteThroughRelay(threading.Thread):
     def __init__(self, publicHostAndPort, relaySock, serverHostAndPort):
         super(RouteThroughRelay, self).__init__()
@@ -107,7 +147,9 @@ class RouteThroughRelay(threading.Thread):
 
 
 
-
+#
+# Note that this protocol does not work.  (Try it with long-running requests from different clients.)
+#
 class RouteThroughOldRelay(threading.Thread):
     def __init__(self, publicHostAndPort, relaySock, serverHostAndPort):
         super(RouteThroughOldRelay, self).__init__()
@@ -131,19 +173,35 @@ class RouteThroughOldRelay(threading.Thread):
 
 
 
+
+# Now for the main event.
+
 print "To shutdown, connect to any public port and enter:", SHUTDOWN_COMMAND
 
-# For each server, get a connection to the relay.
-for idx, serverHostAndPort in enumerate(SERVERS):
-    relaySock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    relaySock.connect(RELAY_SERVER)
-    socketsToShutdown.append(relaySock)
+if len(RELAY_SERVER) < 2:
+    # We're a simple proxy in front of the first server
+    server = ThreadedTCPServer(('localhost', RELAY_SERVER[0]), NewlineProxyHandler)
+    server_thread = threading.Thread(target=server.serve_forever)
+    server_thread.daemon = True
+    server_thread.start()
+    print "listening on port", RELAY_SERVER[0]
+    while (True):
+        time.sleep(10)
+        
 
-    # get the HOST:PORT for this server's public address
-    publicHostAndPort = hostAndPortTuple(readLine(relaySock))
-    if (VERBOSE):
-        print "server {}={} is public at {}".format(idx, serverHostAndPort, publicHostAndPort)
 
-    RouteThroughRelay(publicHostAndPort, relaySock, serverHostAndPort).start()
-    #RouteThroughOldRelay(publicHostAndPort, relaySock, serverHostAndPort).start()
+else:
+    # For each server, get a connection to the relay.
+    for idx, serverHostAndPort in enumerate(SERVERS):
+        relaySock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        relaySock.connect(RELAY_SERVER)
+        socketsToShutdown.append(relaySock)
+            
+        # get the HOST:PORT for this server's public address
+        publicHostAndPort = hostAndPortTuple(readLine(relaySock))
+        if (VERBOSE):
+            print "server {}={} is public at {}".format(idx, serverHostAndPort, publicHostAndPort)
+
+        RouteThroughRelay(publicHostAndPort, relaySock, serverHostAndPort).start()
+        #RouteThroughOldRelay(publicHostAndPort, relaySock, serverHostAndPort).start()
     

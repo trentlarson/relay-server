@@ -114,14 +114,14 @@ if __name__ == "__main__":
         # (The fix is to do something different in the socket reads, instead of (data != '') everywhere.)
 
         # rely on servers that are running
-        hostPort1 = ('localhost', 8084)
+        hostPort1 = ('localhost', 8082)
         hostPort2 = ('localhost', 8083)
         hostPort3 = ('localhost', 8099)
         hostPort4 = ('localhost', 8098)
 
         #runTestClients4([hostPort1, hostPort2, hostPort3, hostPort4])
-        #runTestTwo10SecondClients([hostPort1, hostPort1])
-        runTestClientsWithState([hostPort1, hostPort2])
+        runTestTwo10SecondClients([hostPort1, hostPort1])
+        #runTestClientsWithState([hostPort1, hostPort2])
 
 
     else:
