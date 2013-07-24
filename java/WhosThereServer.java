@@ -4,8 +4,13 @@ import java.net.*;
 
 public class WhosThereServer extends ServerDirectOrRelayed {
   
-  public String response(String request) {
-    return "Who's there?!";
+
+  protected ClientResponder getClientResponder() {
+    return new ClientResponder() {
+      public String response(String request) {
+        return "Who's there?!";
+      }
+    };
   }
 
   public static void main(String[] args) {

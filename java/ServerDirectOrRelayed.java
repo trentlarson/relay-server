@@ -11,11 +11,17 @@ import java.net.*;
  */
 public abstract class ServerDirectOrRelayed {
   
-  public abstract String response(String request);
+  protected interface ClientResponder {
+    public String response(String request);
+  }
+  protected abstract ClientResponder getClientResponder();
+
+
 
   public void runServer(String[] args) {
 
     Socket clientSocket = null;
+    int clientNum = 0;
 
     try {
 
@@ -33,7 +39,7 @@ public abstract class ServerDirectOrRelayed {
 
           while(true) { // loop forever, spawning a thread for each new client
             clientSocket = serverSocket.accept();
-            new Thread(new ResponseHandler(clientSocket)).start();
+            new Thread(new ResponseHandler(getClientResponder(), clientSocket)).start();
           }
         } finally {
           try { serverSocket.close(); } catch (Exception e) {}
@@ -61,7 +67,7 @@ public abstract class ServerDirectOrRelayed {
             String clientHost = messageIn.substring(0, messageIn.indexOf(":"));
             int clientPort = Integer.valueOf(messageIn.substring(messageIn.indexOf(":") + 1));
             clientSocket = new Socket(clientHost, clientPort);
-            new Thread(new ResponseHandler(clientSocket)).start();
+            new Thread(new ResponseHandler(getClientResponder(), clientSocket)).start();
             
             // now wait for the next client
             messageIn = incoming.readLine();
@@ -84,8 +90,10 @@ public abstract class ServerDirectOrRelayed {
    * Thread with a client connection to loop and respond to data.
    */
   public class ResponseHandler implements Runnable {
+    private ClientResponder clientResponder = null;
     private Socket clientConn = null;
-    public ResponseHandler(Socket _clientConn) throws IOException {
+    public ResponseHandler(ClientResponder _clientResponder, Socket _clientConn) throws IOException {
+      clientResponder = _clientResponder;
       clientConn = _clientConn;
     }
     /**
@@ -99,7 +107,7 @@ public abstract class ServerDirectOrRelayed {
         outgoing = new PrintWriter(clientConn.getOutputStream(), true);
         String messageIn = incoming.readLine();
         while (messageIn != null) {
-          outgoing.println(response(messageIn));
+          outgoing.println(clientResponder.response(messageIn));
           messageIn = incoming.readLine();
         }
       } catch (IOException e) {

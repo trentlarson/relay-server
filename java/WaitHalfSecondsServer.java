@@ -5,27 +5,35 @@ import java.util.*;
 
 public class WaitHalfSecondsServer extends ServerDirectOrRelayed {
   
+  public static boolean VERBOSE = true;
+
   int seconds = 0;
   public WaitHalfSecondsServer(int _seconds) {
     seconds = _seconds;
   }
 
-  public String response(String request) {
-    seconds = seconds / 2;
-    int rememberMySeconds = seconds;
-    try {
-      long endMillis = System.currentTimeMillis() + (rememberMySeconds * 1000);
-      while (System.currentTimeMillis() < endMillis) {
-        Thread.currentThread().sleep(1000);
-        System.out.println("" + ((endMillis - System.currentTimeMillis()) / 1000.0) + " seconds left");
+  protected ClientResponder getClientResponder() {
+    return new ClientResponder() {
+      public String response(String request) {
+        seconds = seconds / 2;
+        int rememberMySeconds = seconds;
+        try {
+          long endMillis = System.currentTimeMillis() + (rememberMySeconds * 1000);
+          while (System.currentTimeMillis() < endMillis) {
+            Thread.currentThread().sleep(1000);
+            if (VERBOSE) {
+              System.out.println("" + ((endMillis - System.currentTimeMillis()) / 1000.0) + " seconds left");
+            }
+          }
+          return "Done with " + rememberMySeconds + "-second count.";
+        } catch (InterruptedException e) {
+          Date errorTime = new Date();
+          System.err.println("Error at " + errorTime + ".");
+          e.printStackTrace();
+          return "Errored at " + errorTime;
+        }
       }
-      return "Done with " + rememberMySeconds + "-second count.";
-    } catch (InterruptedException e) {
-      Date errorTime = new Date();
-      System.err.println("Error at " + errorTime + ".");
-      e.printStackTrace();
-      return "Errored at " + errorTime;
-    }
+    };
   }
 
   public static void main(String[] args) {
