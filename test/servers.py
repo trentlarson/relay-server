@@ -1,6 +1,6 @@
 
 
-
+# This just contains classes.  To run tests, use server-client-test.py
 
 
 

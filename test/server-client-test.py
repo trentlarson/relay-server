@@ -1,5 +1,6 @@
 
-# from the end of http://docs.python.org/2/library/socketserver.html
+
+# Run tests... clients... servers... you name it.
 
 import socket
 import sys

@@ -1,4 +1,6 @@
 
+# Adapter to sit between the servers and relay, so that servers can hook to the relay as-is.
+#
 # Set these values for your relay and servers.  (Really gotta make these command-line args.)
 
 
