@@ -8,8 +8,8 @@
 RELAY_SERVER = ('localhost', 8082) # use this format to connect to a relay server
 
 SERVERS = [
-    ('localhost', 8113)
-    ,('localhost', 8089)
+    ('localhost', 8088)
+    #,('localhost', 8089)
     #,('localhost', 8113)
     ]
 
