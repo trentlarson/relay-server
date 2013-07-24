@@ -25,7 +25,8 @@ public abstract class ServerDirectOrRelayed {
 
     try {
 
-      if (args.length < 1) {
+      if (args.length < 1
+          || args[0].equals("-?")) {
         System.out.println("Must supply a port number for listening,"
                            + " or a host and a port for the location of a relay server.");
 

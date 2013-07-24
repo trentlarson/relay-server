@@ -4,9 +4,9 @@
 RELAY_SERVER = ('localhost', 8082)
 
 SERVERS = [
-    ('localhost', 8111)
-    ,('localhost', 8112)
-    ,('localhost', 8113)
+    ('localhost', 8088)
+    ,('localhost', 8089)
+    #,('localhost', 8113)
     ]
 
 VERBOSE = 1
@@ -83,7 +83,6 @@ class RouteThroughRelay(threading.Thread):
         self.serverHostAndPort = serverHostAndPort
         self.relaySock = relaySock
     def run(self):
-        socketsToShutdown.append(relaySock)
 
         # This is the part of the program where you'll want to customize behavior for this server.
 

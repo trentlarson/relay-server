@@ -74,6 +74,16 @@ def runTestTwo10SecondClients(hostPorts):
 
 
 
+
+def runTestClientsWithState(hostPorts):
+    ThreadedNewlineClient(hostPorts[0][0], hostPorts[0][1], "1-1\n1-2\n1-3\n1-4").start()
+    ThreadedNewlineClient(hostPorts[1][0], hostPorts[1][1], "... some\n... random\n... inside").start()
+    ThreadedNewlineClient(hostPorts[0][0], hostPorts[0][1], "2-1\n2-2\n2-3\n2-4").start()
+
+
+
+
+
 if __name__ == "__main__":
 
 
@@ -104,14 +114,14 @@ if __name__ == "__main__":
         # (The fix is to do something different in the socket reads, instead of (data != '') everywhere.)
 
         # rely on servers that are running
-        hostPort1 = ('localhost', 8088)
-        hostPort2 = ('localhost', 8099)
+        hostPort1 = ('localhost', 8084)
+        hostPort2 = ('localhost', 8083)
         hostPort3 = ('localhost', 8099)
         hostPort4 = ('localhost', 8098)
 
         #runTestClients4([hostPort1, hostPort2, hostPort3, hostPort4])
-        runTestTwo10SecondClients([hostPort1, hostPort1])
-        
+        #runTestTwo10SecondClients([hostPort1, hostPort1])
+        runTestClientsWithState([hostPort1, hostPort2])
 
 
     else:
