@@ -51,37 +51,32 @@ Hello, world
 ________________________________________________________________________________
 Assumptions
 
-Here are my assumptions.  I'm going ahead with this rather than asking and waiting for answers, so gently point out if there's anything I'm thinking that is just plain missing the point.
-
 I can use a server/socket library (eg. for Java).
-
-These two sentences cover the same requirement:
-"it should output on stdout what its new public address is"
-"this requires your relay server interface to notify relayed clients of their public address"
-(In other words, it's possible that your second sentence means there is some other notification method that is required, but I'm assuming not.)
-
-I don't have to provide great usability info (eg. if they provide a port of "xyz"), or build instructions.  (It'll be in Java; I'll provide the class files.)
-
-I don't have to write signals back-and-forth for when, say, the relay shuts down or when the servers shut down.  I can do my own thing if a server shuts down (like return "null" or blank responses to clients).
-
-I can ignore problems of too much data on one newline, too many servers, too many clients, connections being open for too long, or disconnects (since you said we won't "initiate" any connections)... essentially, all those pesky high-traffic concerns.
-
-
-More Assumptions
 
 The request & response terminators can be CR or LF or CR-LF.
 
 The protocol is always one request from the client which results in
 one response from the server.  So if a server isn't finished with a
-request yet, subsequent requests by same client will queue (so other
-clients may get served first).
+request yet, subsequent requests by the same client will queue; also,
+multiline requests/responses will depend on an acknowledgement of each
+line from the other side.
+
+I don't have to do connection management, eg. signals back-and-forth
+for when the relay shuts down or when the servers shut down.  I can do
+my own thing if a server shuts down (like return "null" or error or no
+responses to clients).
+
+I can ignore problems of too much data on one newline, too many
+servers, too many clients, connections being open for too long, or
+disconnects... essentially, all those pesky high-traffic concerns.
+
 
 
 
 
 
 ________________________________________________________________________________
-Explanation of Relay Server
+EXPLANATION OF RELAY SERVER
 
 This relay server is your public intermediary to the rest of the
 world, giving access to your own server that may be sitting behind a
@@ -193,12 +188,12 @@ calls the sample RequestWaiter for each client connection you get:
 
 Here's the change: instead of listening for all your clients as a
 server, make one connection to our relay, get the public HOST:PORT
-which you can advertize, and then listen for the address where you can
-connect to each client as they contact your address at the relay.
+which you can advertize, and then listen for other addresses where you
+can connect to each client as they contact your public address.
 
         clientAddressSocket = new Socket("1234.amazonaws.com", 8888); // for the relay server
 
-        // grab public address from the relay
+        // grab my public address from the relay
         incoming = new BufferedReader(new InputStreamReader(clientAddressSocket.getInputStream()));
         String publicHostAndPort = incoming.readLine();
         System.out.println(publicHostAndPort); // this is the HOST:PORT to give clients
@@ -225,5 +220,23 @@ ________________________________________________________________________________
 Commentary
 
 You asked for some feedback, but the problem is actually pretty well
-specified.  In my case, I just focused on the part of the problem with
-the routing
+specified.  In my case, I focused on the routing and I aimed for a
+very simple (simplistic!) server modification.  You could conceivably
+warn people, but I think you want to find people who will do it right
+the first time (or maybe understand their mistakes with little
+explanation :-).
+
+I thought about supplying test cases, but there's the same issue: you
+want people who will come up with good test cases or grok their
+mistakes quickly.
+
+Of course, I'm sure you have test servers to help with your grading.
+One thing that is a pain, I'm sure, is to modify those servers to work
+with people's relays; I thought it was clunky to architect and run two
+different versions of my servers.  So I created the relay-adapter.py
+to sit in between the servers and the client or the relay: when run as
+a simple proxy, it passes client requests to a server; then it can be
+modified to work with the relay and route things to the servers.
+Anyway, I thought it worthwhile to share that part of my testing.
+
+
