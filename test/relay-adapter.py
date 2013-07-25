@@ -49,6 +49,7 @@ import SocketServer
 SHUTDOWN_COMMAND = "shutdown adapter"
 
 # Read from the sockets, looking for "\n" (one character at a time).
+# GOTTA LOOK AT ALL USES OF THIS AND ELIMINATE IT NOW THAT RELAYING ISN'T BOUND TO NEWLINES.
 def readLine(s):
     return s.makefile().readline().rstrip("\n")
 '''

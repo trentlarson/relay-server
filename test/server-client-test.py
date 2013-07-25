@@ -10,6 +10,7 @@ import SocketServer
 
 
 # Read from the sockets, looking for "\n" (one character at a time).
+# GOTTA LOOK AT ALL USES OF THIS AND ELIMINATE IT NOW THAT RELAYING ISN'T BOUND TO NEWLINES.
 def read_line(s):
     ret = ''
     while True:
@@ -24,22 +25,29 @@ import os
 execfile('servers.py')
 
 
-
 class ThreadedNewlineClient(threading.Thread):
-    def __init__(self, ip, port, message):
+    def __init__(self, ip, port, message, wait4multilines = False):
         super(ThreadedNewlineClient, self).__init__()
         self.ip = ip
         self.port = port
-        self.messages = message.split("\n")
+        self.message = message
+        self.wait4multilines = wait4multilines
 
     def run(self):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.connect((self.ip, self.port))
         try:
-            for message in self.messages:
-                sock.sendall(message + "\n")
-                nextResponse = read_line(sock)
-                print "Received: {}".format(nextResponse)
+            if self.wait4multilines:
+                sock.sendall(self.message)
+                sock.settimeout(10)
+                while True:
+                    nextResponse = read_line(sock)
+                    print "Received: {}".format(nextResponse)
+            else:
+                for amessage in self.message.split("\n"):
+                    sock.sendall(amessage + "\n")
+                    nextResponse = read_line(sock)                
+                    print "Received: {}".format(nextResponse)
         finally:
             sock.close()
 
@@ -84,6 +92,14 @@ def runTestClientsWithState(trackServer, echoServer, trackServer2):
 
 
 
+def runTestNewlineDotMessages(newlineDotServer):
+    ThreadedNewlineClient(newlineDotServer[0], newlineDotServer[1],
+                          "line 1.1\nline 1.2\nline 1.3\n\n.\n", True).start()
+    ThreadedNewlineClient(newlineDotServer[0], newlineDotServer[1],
+                          "line 2.1\nline 2.2\nline 2.3\nline 2.4\n\n.\n", True).start()
+
+
+
 
 if __name__ == "__main__":
 
@@ -116,15 +132,17 @@ if __name__ == "__main__":
 
         # rely on servers that are running
         echoSrv        = ('localhost', 8083)
+        newlineDotSrv  = ('localhost', 8087)
         trackSrv       = ('localhost', 8084)
         trackSrv2      = ('localhost', 8084)
         waitInputSrv   = ('localhost', 8085)
         waitSomeSrv    = ('localhost', 8096)
 
 
-        #runTestClients4(waitInputSrv, echoSrv)
+        runTestClients4(waitInputSrv, echoSrv)
         #runTestTwo10SecondClients(waitInputSrv)
-        runTestClientsWithState(trackSrv, echoSrv, trackSrv2)
+        #runTestClientsWithState(trackSrv, echoSrv, trackSrv2)
+        #runTestNewlineDotMessages(newlineDotSrv)
 
 
     else:
