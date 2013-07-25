@@ -4,16 +4,38 @@
 # Set these values for your relay and servers.  (Really gotta make these command-line args.)
 
 
-#RELAY_SERVER = (8082,)              # use this format to run as a proxy for the first server
-RELAY_SERVER = ('localhost', 8082) # use this format to connect to a relay server
+import argparse
+import string
 
-SERVERS = [
-    ('localhost', 8088)
-    #,('localhost', 8089)
-    #,('localhost', 8113)
-    ]
+parser = argparse.ArgumentParser(description='Connect existing servers to a relay (or to this).')
+parser.add_argument('--no-relay', '-n', action='store_true',
+                   help='do not connect to a relay; connect to and expose one server')
+parser.add_argument('relayHostPort', default='localhost:8080',
+                   help='the host:port for the relay (or just the port if using no relay)')
+parser.add_argument('serverHostPorts', nargs='+', default='localhost:8081',
+                   help='the host:port combinations for all servers')
+parser.add_argument('--verbose', '-v', action='count')
 
-VERBOSE = 1
+args = parser.parse_args()
+
+
+def splitColon(str):
+    [host, port] = string.split(str, ":")
+    return (host, port)
+def portToInt((host, port)):
+    return (host, int(port))
+
+
+NO_RELAY = args.no_relay
+if args.relayHostPort.find(":") > -1:
+    RELAY_SERVER = portToInt(splitColon(args.relayHostPort))
+else:
+    RELAY_SERVER = (int(args.relayHostPort),)
+
+SERVERS = map(portToInt, map(splitColon, args.serverHostPorts))
+
+VERBOSE = args.verbose
+
 
 
 
@@ -201,8 +223,7 @@ else:
             
         # get the HOST:PORT for this server's public address
         publicHostAndPort = hostAndPortTuple(readLine(relaySock))
-        if (VERBOSE):
-            print "server {}={} is public at {}".format(idx, serverHostAndPort, publicHostAndPort)
+        print "server {}={} is public at {}".format(idx, serverHostAndPort, publicHostAndPort)
 
         RouteThroughRelay(publicHostAndPort, relaySock, serverHostAndPort).start()
         #RouteThroughOldRelay(publicHostAndPort, relaySock, serverHostAndPort).start()
