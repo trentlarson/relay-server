@@ -3,6 +3,9 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 
+/**
+ * Server to wait half given number of seconds each request
+ */
 public class WaitHalfSecondsServer extends ServerDirectOrRelayed {
   
   public static boolean VERBOSE = true;
@@ -25,12 +28,12 @@ public class WaitHalfSecondsServer extends ServerDirectOrRelayed {
               System.out.println("" + ((endMillis - System.currentTimeMillis()) / 1000.0) + " seconds left");
             }
           }
-          return "Done with " + rememberMySeconds + "-second count.";
+          return "Done with " + rememberMySeconds + "-second count.\n";
         } catch (InterruptedException e) {
           Date errorTime = new Date();
           System.err.println("Error at " + errorTime + ".");
           e.printStackTrace();
-          return "Errored at " + errorTime;
+          return "Errored at " + errorTime + "\n";
         }
       }
     };

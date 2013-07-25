@@ -25,12 +25,12 @@ public class WaitOneSecondLessServer extends ServerDirectOrRelayed {
               System.out.println("" + ((endMillis - System.currentTimeMillis()) / 1000.0) + " seconds left");
             }
           }
-          return "Done with " + rememberMySeconds + "-second count.";
+          return "Done with " + rememberMySeconds + "-second count.\n";
         } catch (InterruptedException e) {
           Date errorTime = new Date();
           System.err.println("Interrupted at " + errorTime + ".");
           e.printStackTrace();
-          return "Interrupted at " + errorTime;
+          return "Interrupted at " + errorTime + "\n";
         }
       }
     };

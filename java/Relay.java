@@ -150,7 +150,8 @@ public class Relay {
           }
         }
         // now that we've got the new connection for just this server & client, route
-        new Thread(new PassThroughRequestWaiter(connForClient.serverSocket, newClientConnection)).start();
+        new Thread(new RelayBetweenSockets(connForClient.serverSocket, newClientConnection)).start();
+        new Thread(new RelayBetweenSockets(newClientConnection, connForClient.serverSocket)).start();
       } catch (IOException e) {
         throw new RuntimeException("Got error trying to connect server for client,"
                                    + " so won't serve clients to this this server any more.", e);
@@ -195,49 +196,39 @@ public class Relay {
   }
 
 
-  /**
-   * Pass messages back-and-forth between the server and the client.
-   */
-  public static class PassThroughRequestWaiter implements Runnable {
-    Socket serverSocket = null, newClientConnection = null;
-    public PassThroughRequestWaiter(Socket _serverSocket, Socket _newClientConnection) {
+
+  public static final int BUFFER_SIZE = 1024;
+
+  public static class RelayBetweenSockets implements Runnable {
+    Socket serverSocket = null, clientSocket = null;
+    public RelayBetweenSockets(Socket _serverSocket, Socket _clientSocket) {
       serverSocket = _serverSocket;
-      newClientConnection = _newClientConnection;
+      clientSocket = _clientSocket;
     }
     public void run() {
       BufferedReader requestFromClient = null;
       PrintWriter requestToServer = null;
-      BufferedReader responseFromServer = null;
-      PrintWriter responseToClient = null;
       try {
-        requestFromClient = new BufferedReader(new InputStreamReader(newClientConnection.getInputStream()));
+        requestFromClient = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
         requestToServer = new PrintWriter(serverSocket.getOutputStream(), true);
-        responseFromServer = new BufferedReader(new InputStreamReader(serverSocket.getInputStream()));
-        responseToClient = new PrintWriter(newClientConnection.getOutputStream(), true);
-
-        String messageIn = requestFromClient.readLine();
-        while (messageIn != null) { // loop until the stream is closed
-          requestToServer.println(messageIn);
-          if (verbose > 1) System.out.println("Starting message to server "+serverSocket
-                                              +" from client "+newClientConnection+"...");
-          String messageBack = responseFromServer.readLine();
-          if (verbose > 1) System.out.println("... got response from server "+serverSocket
-                                              +", so responding to client "+newClientConnection+".");
-          responseToClient.println(messageBack);
-          messageIn = requestFromClient.readLine();
+        int bufferUsed = 0;
+        int cin = requestFromClient.read();
+        while (cin > -1) {
+          requestToServer.write((char)cin);
+          bufferUsed++;
+          if (bufferUsed == BUFFER_SIZE
+              || cin == 10) {
+            requestToServer.flush();
+            bufferUsed = 0;
+          }
+          cin = requestFromClient.read();
         }
-
       } catch (IOException e) {
-        throw new RuntimeException("Got error routin client & server request, so giving up.", e);
+        throw new RuntimeException("Got error passing from client to server, so punting.", e);
       } finally {
         try { requestFromClient.close(); } catch (Exception e) {}
         try { requestToServer.close(); } catch (Exception e) {}
-        try { responseFromServer.close(); } catch (Exception e) {}
-        try { responseToClient.close(); } catch (Exception e) {}
-        try { newClientConnection.close(); } catch (Exception e) {}
-        try { serverSocket.close(); } catch (Exception e) {}
       }
-
     }
   }
 

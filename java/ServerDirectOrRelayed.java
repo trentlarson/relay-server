@@ -87,6 +87,8 @@ public abstract class ServerDirectOrRelayed {
     }
   }
 
+  public static final int BUFFER_SIZE = 1024;
+
   /**
    * Thread with a client connection to loop and respond to data.
    */
@@ -105,11 +107,22 @@ public abstract class ServerDirectOrRelayed {
       PrintWriter outgoing = null;
       try {
         incoming = new BufferedReader(new InputStreamReader(clientConn.getInputStream()));
+        StringBuilder response = new StringBuilder();
         outgoing = new PrintWriter(clientConn.getOutputStream(), true);
-        String messageIn = incoming.readLine();
-        while (messageIn != null) {
-          outgoing.println(clientResponder.response(messageIn));
-          messageIn = incoming.readLine();
+        int bufferUsed = 0;
+        int iin = incoming.read();
+        while (iin > -1) {
+          char cin = (char)iin;
+          response.append(cin);
+          bufferUsed++;
+          if (bufferUsed == BUFFER_SIZE
+              || cin == 10) {
+            outgoing.write(clientResponder.response(response.toString()));
+            response = new StringBuilder();
+            outgoing.flush();
+            bufferUsed = 0;
+          }
+          iin = incoming.read();
         }
       } catch (IOException e) {
         throw new RuntimeException("Got an error communicating with a client, so we're aborting it.", e);

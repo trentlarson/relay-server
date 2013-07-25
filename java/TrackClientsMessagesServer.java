@@ -2,6 +2,11 @@
 import java.io.*;
 import java.net.*;
 
+/**
+ * Track Clients and Messages Server
+ *
+ * This assumes all input strings are length less than 1024.
+ */
 public class TrackClientsMessagesServer extends ServerDirectOrRelayed {
   
   private int clientCount = 0;
