@@ -12,19 +12,18 @@ public class MessageNewlineDotNewlineServer extends ServerDirectOrRelayed {
   
   protected ClientResponder getClientResponder() {
     return new ClientResponder() {
-      boolean gotBlankLineLast = false;
+      String previousLine = "";
+      StringBuilder message = new StringBuilder();
       public String response(String request) {
-        String request2 = request.substring(0, request.length() - 1); // to strip the LF
-        if (request2.equals(".")
-            && gotBlankLineLast) {
-          gotBlankLineLast = false;
-          return "EOM";
+        if (previousLine.equals("\n")
+            && request.equals(".\n")) {
+          previousLine = "";
+          String result = message.toString();
+          message = new StringBuilder();
+          return result.toString() + "---\n";
         } else {
-          if (request2.equals("")) {
-            gotBlankLineLast = true;
-          } else {
-            gotBlankLineLast = false;
-          }
+          message.append(previousLine);
+          previousLine = request;
           return "";
         }
       }
