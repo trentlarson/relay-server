@@ -115,13 +115,13 @@ if __name__ == "__main__":
         # (The fix is to do something different in the socket reads, instead of (data != '') everywhere.)
 
         # rely on servers that are running
-        echoSrv        = ('localhost', 8102)
-        trackSrv       = ('localhost', 8103)
-        trackSrv2      = ('localhost', 8095)
-        waitInputSrv   = ('localhost', 8104)
-        waitSomeSrv    = ('localhost', 8105)
+        echoSrv        = ('localhost', 8083)
+        trackSrv       = ('localhost', 8084)
+        trackSrv2      = ('localhost', 8084)
+        waitInputSrv   = ('localhost', 8085)
+        waitSomeSrv    = ('localhost', 8096)
 
-        #FAIL!!
+
         #runTestClients4(waitInputSrv, echoSrv)
         #runTestTwo10SecondClients(waitInputSrv)
         runTestClientsWithState(trackSrv, echoSrv, trackSrv2)
