@@ -44,21 +44,21 @@ class ThreadedNewlineClient(threading.Thread):
             sock.close()
 
 
-def runTestClients4(hostPorts):
-    ThreadedNewlineClient(hostPorts[0][0], hostPorts[0][1], "1\n2\n3\n4\n5").start()
+def runTestClients4(waitInputServer, echoServer):
+    ThreadedNewlineClient(waitInputServer[0], waitInputServer[1], "1\n2\n3\n4\n5").start()
     time.sleep(3)
 
 
-    ThreadedNewlineClient(hostPorts[1][0], hostPorts[1][1],
-                          "Data, pause...\n... more, pause...\n... done.").start()
+    ThreadedNewlineClient(echoServer[0], echoServer[1],
+                          "Data, and...\n... more, and...\n... done.").start()
 
 
-    ThreadedNewlineClient(hostPorts[2][0], hostPorts[2][1],
-                          "This should \n happen before \n the other.").start()
+    ThreadedNewlineClient(echoServer[0], echoServer[1],
+                          "This should \n happen in middle of \n the other.").start()
     
 
     time.sleep(2) # let's wait until some of the sleep stuff is printed
-    ThreadedNewlineClient(hostPorts[3][0], hostPorts[3][1],
+    ThreadedNewlineClient(echoServer[0], echoServer[1],
                           "This should \n be interleaved.").start()
         
 
@@ -66,20 +66,20 @@ def runTestClients4(hostPorts):
 
 
 
-def runTestTwo10SecondClients(hostPorts):
+def runTestTwo10SecondClients(waitInputServer):
     print "This should only take 10 seconds."
-    ThreadedNewlineClient(hostPorts[0][0], hostPorts[0][1], "3\n3\n3\n1").start()
-    ThreadedNewlineClient(hostPorts[1][0], hostPorts[1][1], "1\n1\n4\n4").start()
+    ThreadedNewlineClient(waitInputServer[0], waitInputServer[1], "3\n3\n3\n1").start()
+    ThreadedNewlineClient(waitInputServer[0], waitInputServer[1], "1\n1\n4\n4").start()
 
 
 
 
 
 
-def runTestClientsWithState(hostPorts):
-    ThreadedNewlineClient(hostPorts[0][0], hostPorts[0][1], "1-1\n1-2\n1-3\n1-4").start()
-    ThreadedNewlineClient(hostPorts[1][0], hostPorts[1][1], "... some\n... random\n... inside").start()
-    ThreadedNewlineClient(hostPorts[0][0], hostPorts[0][1], "2-1\n2-2\n2-3\n2-4").start()
+def runTestClientsWithState(trackServer, echoServer, trackServer2):
+    ThreadedNewlineClient(trackServer[0], trackServer[1], "1-1\n1-2\n1-3\n1-4").start()
+    ThreadedNewlineClient(echoServer[0], echoServer[1], "... some\n... random\n... inside").start()
+    ThreadedNewlineClient(trackServer2[0], trackServer2[1], "2-1\n2-2\n2-3\n2-4").start()
 
 
 
@@ -115,14 +115,16 @@ if __name__ == "__main__":
         # (The fix is to do something different in the socket reads, instead of (data != '') everywhere.)
 
         # rely on servers that are running
-        hostPort1 = ('localhost', 8082)
-        hostPort2 = ('localhost', 8083)
-        hostPort3 = ('localhost', 8099)
-        hostPort4 = ('localhost', 8098)
+        echoSrv        = ('localhost', 8102)
+        trackSrv       = ('localhost', 8103)
+        trackSrv2      = ('localhost', 8095)
+        waitInputSrv   = ('localhost', 8104)
+        waitSomeSrv    = ('localhost', 8105)
 
-        #runTestClients4([hostPort1, hostPort2, hostPort3, hostPort4])
-        runTestTwo10SecondClients([hostPort1, hostPort1])
-        #runTestClientsWithState([hostPort1, hostPort2])
+        #FAIL!!
+        #runTestClients4(waitInputSrv, echoSrv)
+        #runTestTwo10SecondClients(waitInputSrv)
+        runTestClientsWithState(trackSrv, echoSrv, trackSrv2)
 
 
     else:
